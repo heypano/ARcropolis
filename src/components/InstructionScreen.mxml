@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   backgroundColor="#6A2511" backgroundAlpha="1"  borderStyle="inset" borderColor="#843622" borderWeight="10" cornerRadius="15" dropShadowVisible="false"
+				   xmlns:logintableservice="services.logintableservice.*"  creationComplete="init()"  width="882" height="532">
+	<fx:Script>
+		<![CDATA[
+			import localization.OurStrings;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			
+			import org.osmf.events.AudioEvent;
+			
+			import skins.playButtonSkinForWelcomScreen;
+			
+			[Bindable]//Xreiazetai se ola ta components gia to localization
+			public var currentArray:ArrayCollection;//Xreiazetai se ola ta components gia to localization
+			public var fileRef:FileReference = new FileReference();
+			public var urlreq:URLRequest;
+			
+			public function init():void{
+				theborder.addEventListener(KeyboardEvent.KEY_DOWN,rightleft);
+				theborder.setFocus();
+			}
+			
+			public function rightleft(event:KeyboardEvent):void{
+				if(event.keyCode==Keyboard.LEFT){
+					if(currentState=='State2')currentState='State1';
+					else if(currentState=='State3')currentState='State2';
+				}
+				else if(event.keyCode==Keyboard.RIGHT){
+					if(currentState=='State1')currentState='State2';
+					else if(currentState=='State2')currentState='State3';
+				}
+			}
+			
+			protected function label1_clickHandler(event:MouseEvent):void
+			{
+				/*if (!fileRef.download(urlreq)) {
+				trace("dialog box failed to open.");
+				}*/
+				urlreq=new URLRequest(currentArray.getItemAt(OurStrings.GAME_PATTERN_PDF_LINK).toString());
+				
+				navigateToURL( urlreq);
+			}
+			
+			protected function back_button_function(event:MouseEvent):void
+			{
+				this.dispatchEvent(new AudioEvent(AudioEvent.MUTED_CHANGE,true,false));
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="State1"/>
+		<s:State name="State2" />
+		<s:State name="State3"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Label id="title"  text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_TITLE)}"  x="27" y="48" fontSize="30" fontWeight="bold"/>
+	<s:BorderContainer id="theborder" borderColor="#000000" borderWeight="2" backgroundColor="#FFFFFF" backgroundAlpha="0.5" cornerRadius="18" x="27" y="101" width="737" height="275">
+		
+		<s:RichText id="maintext1" includeIn="State1" fontSize="16"  lineHeight="30" width="750" verticalCenter="0" horizontalCenter="0" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" >
+			<s:content>
+				<s:span textDecoration="underline" fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT1_1)}"/><s:br /><s:span text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT1_2)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT1_3)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT1_4)}" /><s:br />
+				<s:span text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT1_5)}" /><s:br />
+				<s:span text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT1_6)}" />
+			</s:content>
+		</s:RichText>
+		<s:RichText id="maintext2" includeIn="State2" fontSize="16"  lineHeight="30" width="750" verticalCenter="0" horizontalCenter="0" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" >
+			<s:content>
+				<s:span textDecoration="underline" fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT2_1)}" /><s:br /><s:span text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT2_2)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT2_3)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXΤ2_4)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT2_5)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT2_6)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT2_7)}" /><s:br />
+			</s:content>
+		</s:RichText>
+		<s:RichText id="maintext3" includeIn="State3" fontSize="16"  lineHeight="30" width="750" verticalCenter="0" horizontalCenter="0" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" >
+			<s:content>
+				<s:span textDecoration="underline" fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT3_1)}" /><s:br /><s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT3_2)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT3_3)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXΤ3_4)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT3_5)}" /><s:br />
+			</s:content>
+		</s:RichText>
+		<mx:SWFLoader id="patternsampleimage" includeIn="State1" source="@Embed('resources/images/patt001.png')" scaleX="0.1" scaleY="0.1" mouseOver="patternsampleimage.alpha-=0.5" mouseOut="patternsampleimage.alpha+=0.5" click="label1_clickHandler(event)"  x="159" y="193"/>
+	</s:BorderContainer>
+	<s:Label text="•" color="#FFFFFF" fontSize="30" alpha.State2="0.2" alpha.State3="0.2" click="currentState='State1'" x="371.5" y="382"/>
+	<s:Label text="•" color="#FFFFFF" fontSize="30" alpha.State1="0.2" alpha.State3="0.2" click="currentState='State2'" x="389.5" y="382"/>
+	<s:Label text="•" color="#FFFFFF" fontSize="30" alpha.State1="0.2" alpha.State2="0.2" click="currentState='State3'" x="407.5" y="382"/>
+	<mx:Image source="@Embed('resources/images/arrowback.png')"  x="333" y="381" click="if(currentState=='State2')currentState='State1';else if(currentState=='State3')currentState='State2';"/>
+	<mx:Image source="@Embed('resources/images/arrowfront.png')"  x="426" y="381" click="if(currentState=='State1')currentState='State2';else if(currentState=='State2')currentState='State3';"/>
+	
+	<s:Button label="Play" includeIn="State3" click="this.dispatchEvent(new AudioEvent(AudioEvent.PAN_CHANGE,true,false));" skinClass="skins.playButtonSkinForWelcomScreen" width="53" x="487" y="381"/>
+	<mx:SWFLoader source="@Embed('resources/images/backarrow.png')" x="5" y="5" id="back_button"  click="back_button_function(event)" />
+</s:BorderContainer>

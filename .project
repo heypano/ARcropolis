@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>20110507_localization_advancing_Arkropolis</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>com.adobe.flexbuilder.project.flexbuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>com.adobe.flexbuilder.project.flexnature</nature>
+		<nature>com.adobe.flexbuilder.project.actionscriptnature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>bin-release</name>
+			<type>2</type>
+			<location>C:/wamp/www/20110525</location>
+		</link>
+		<link>
+			<name>whatever</name>
+			<type>2</type>
+			<location>C:/wamp/www/whatever</location>
+		</link>
+		<link>
+			<name>services/LogintableService2.php</name>
+			<type>1</type>
+			<location>C:/wamp/www/bob/services/LogintableService2.php</location>
+		</link>
+		<link>
+			<name>services/MovesService_MovesService.php</name>
+			<type>1</type>
+			<location>C:/wamp/www/bob/services/MovesService.php</location>
+		</link>
+		<link>
+			<name>services/ScoretableService.php</name>
+			<type>1</type>
+			<location>C:/wamp/www/Gravity-debug/services/ScoretableService.php</location>
+		</link>
+	</linkedResources>
+</projectDescription>

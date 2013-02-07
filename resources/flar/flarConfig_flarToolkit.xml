@@ -1,0 +1,51 @@
+<!-- this file specifies configurations for FLARManager. -->
+<!-- to use this file to initialize FLARManager, pass its path into FLARManager.initFromFile(). -->
+<!-- note that all relative paths listed here must be relative to the .swf location; absolute paths may also be used. -->
+
+<flar_config>
+	<!-- source settings -->
+	<flarSourceSettings
+		sourceWidth="640"
+		sourceHeight="480"
+		displayWidth="640"
+		displayHeight="480"
+		framerate="30"
+		trackerToSourceRatio="0.5" />
+
+	<!-- miscellaneous FLARManager settings -->
+	<flarManagerSettings
+		mirrorDisplay="true"
+		smoothing="4" >
+		<smoother className="FLARMatrixSmoother_Average" positionToRotationRatio="0.5" />
+		<thresholdAdapter className="DrunkHistogramThresholdAdapter" speed="0.3" />
+	</flarManagerSettings>
+	
+	<!-- settings for the selected tracking library. -->
+	<trackerSettings>
+	
+		<!-- location of camera parameters file for FLARToolkit, e.g. FLARCameraParams.dat or camera_para.dat. -->
+		<flarToolkitSettings
+			cameraParamsFile="../resources/flarToolkit/FLARCameraParams.dat" >
+			
+			<!-- list of file paths of patterns for FLARToolkit to detect. -->
+			<!-- @resolution specifies the resolution at which the patterns were generated. -->
+			<patterns resolution="8" patternToBorderRatioX="50" patternToBorderRatioY="50" minConfidence="0.5" >
+				<pattern path="../resources/flarToolkit/patterns/pat8/patt001.pat" />
+				<pattern path="../resources/flarToolkit/patterns/pat8/patt002.pat" />
+				<pattern path="../resources/flarToolkit/patterns/pat8/patt003.pat" />
+				<pattern path="../resources/flarToolkit/patterns/pat8/patt004.pat" />
+				<pattern path="../resources/flarToolkit/patterns/pat8/patt005.pat" />
+				<pattern path="../resources/flarToolkit/patterns/pat8/patt006.pat" />
+				<pattern path="../resources/flarToolkit/patterns/pat8/patt007.pat" />
+				<pattern path="../resources/flarToolkit/patterns/pat8/patt008.pat" />
+				<pattern path="../resources/flarToolkit/patterns/pat8/patt009.pat" />
+				<pattern path="../resources/flarToolkit/patterns/pat8/patt010.pat" />
+				<pattern path="../resources/flarToolkit/patterns/pat8/patt011.pat" />
+				<pattern path="../resources/flarToolkit/patterns/pat8/patt012.pat" />
+			</patterns>
+			
+		</flarToolkitSettings>
+		
+	</trackerSettings>
+	
+</flar_config>

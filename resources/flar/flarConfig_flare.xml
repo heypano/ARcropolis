@@ -1,0 +1,37 @@
+<!-- this file specifies configurations for FLARManager. -->
+<!-- to use this file to initialize FLARManager, pass its path into FLARManager.initFromFile(). -->
+<!-- note that all relative paths listed here must be relative to the .swf location; absolute paths may also be used. -->
+
+<flar_config>
+	<!-- source settings -->
+	<flarSourceSettings
+		sourceWidth="640"
+		sourceHeight="480"
+		displayWidth="640"
+		displayHeight="480"
+		framerate="30"
+		trackerToSourceRatio="0.5" />
+
+	<!-- miscellaneous FLARManager settings -->
+	<flarManagerSettings
+		mirrorDisplay="true"
+		smoothing="4" >
+		<smoother className="FLARMatrixSmoother_Average" positionToRotationRatio="0.5" />
+	</flarManagerSettings>
+	
+	<!-- settings for the selected tracking library. -->
+	<trackerSettings>
+		
+		<!-- location of resources folder and camera parameters file, and NFT settings, for Flare. -->
+		<flareSettings
+			resourcesPath="../resources/flare/"
+			cameraParamsFile="cam.ini">
+			<nftSettings
+				featureSetFile="featureSet.ini"
+				framerate="30"
+				multiTargets="false" />
+		</flareSettings>
+		
+	</trackerSettings>
+	
+</flar_config>

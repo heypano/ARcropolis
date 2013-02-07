@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   backgroundColor="#6DB6C6" backgroundAlpha=".5"
+				   borderStyle="inset" borderColor="#84CBDA" borderWeight="10"
+				   cornerRadius="15" dropShadowVisible="true" xmlns:logintableservice="services.logintableservice.*" width="336" height="200">
+	<!-- creationComplete="bordercontainer1_creationCompleteHandler(event)" -->
+	<fx:Script>
+		<![CDATA[
+			import localization.OurStrings;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import org.osmf.events.AudioEvent;
+			
+			import valueObjects.Logintable; //Xreiazetai se ola ta components gia to localization
+			[Bindable]//Xreiazetai se ola ta components gia to localization
+			public var currentArray:ArrayCollection;//Xreiazetai se ola ta components gia to localization
+			private var accountExists:Boolean=false;
+			public var loggedinusername:String;
+			
+			public function login(event:Event):void
+			{
+				if(nameinput.text!=""){
+					loggedinusername=nameinput.text;
+					//Alert.show("Hi "+loggedinusername+"!");
+					this.dispatchEvent(new AudioEvent(AudioEvent.PAN_CHANGE,true,false));
+				}
+				else Alert.show(currentArray.getItemAt(OurStrings.NAME_GETTER_1).toString());
+			}
+			public function back_button_function(event:Event):void{//<-- edw allaksa kari
+				this.dispatchEvent(new AudioEvent(AudioEvent.MUTED_CHANGE,true,false));
+			}
+		]]>
+	</fx:Script>
+	
+	
+	<s:Label text="{currentArray.getItemAt(OurStrings.NAME_GETTER_2)}"  top="50" left="10" fontSize="18" />
+	<s:TextInput id="nameinput"  verticalCenter="0" left="10" enter="login(event)"/>
+	<s:Button label="{currentArray.getItemAt(OurStrings.NAME_GETTER_3)}" id="submit_button" click="login(event)"  bottom="40" left="10" skinClass="skins.WelcomeScreenButtonsSkin"/>
+	<!--<s:Button id="back_button"   click="back_button_function(event)" right="0" skinClass="skins.NameGetterSkinButton"/> -->
+	
+</s:BorderContainer>

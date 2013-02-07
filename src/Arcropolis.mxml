@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"  
+			   creationComplete="initApp()"  xmlns:components="components.*">
+	<fx:Script>
+		<![CDATA[
+			import ARfiles.FlarClass;
+			
+			import localization.OurStrings;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.states.State;
+			
+			import org.osmf.events.AudioEvent;
+			private var username:String;
+			private var playernumber:int;
+			private var roomnumber:int;
+			[Bindable]
+			public var centralStrings:OurStrings=new OurStrings(); // tha kaloume thn antistoixh sunarthsh toGreek, toEnglish me ta antistoixa click
+			
+			private function initApp():void { 
+				
+				//logincomponent.addEventListener(AudioEvent.PAN_CHANGE,loggedinfunction);
+				centralStrings.toEnglish();
+				thewelcomeScreen.addEventListener(AudioEvent.PAN_CHANGE,start_playing);
+				thewelcomeScreen.addEventListener(AudioEvent.MUTED_CHANGE,show_instructions);
+				ExternalInterface.call("s = function() {document.getElementById('"+this.id+"').focus(); }");
+				this.addEventListener(KeyboardEvent.KEY_DOWN,enterPressed);
+				this.setFocus();
+			} 
+			
+			private function enterPressed(event:KeyboardEvent):void{
+				//trace(buttonBar.selectedIndex.toString());
+				if(/*(buttonBar.selectedIndex==0)&&*/(event.keyCode==Keyboard.ENTER)&&(currentState=="State1")){
+					start_playing(event);
+					this.removeEventListener(KeyboardEvent.KEY_DOWN,enterPressed);
+				}
+				
+			}
+			
+			protected function start_playing(event:Event):void //triggered otan patietai to koumpi play sthn arxikh selida
+				
+			{
+				thewelcomeScreen.removeEventListener(AudioEvent.PAN_CHANGE,start_playing); 
+				thewelcomeScreen.removeEventListener(AudioEvent.MUTED_CHANGE,show_instructions);
+				currentState="GetNameState";
+				logincomponent.addEventListener(AudioEvent.PAN_CHANGE,loggedinfunction);  
+				logincomponent.addEventListener(AudioEvent.MUTED_CHANGE,backToState1Function);
+				logincomponent.nameinput.setFocus();
+			}
+			
+			protected function show_instructions(event:Event):void //triggered otan patietai to koumpi play sthn arxikh selida
+				
+			{
+				thewelcomeScreen.removeEventListener(AudioEvent.PAN_CHANGE,start_playing); 
+				thewelcomeScreen.removeEventListener(AudioEvent.MUTED_CHANGE,show_instructions); 
+				currentState="Instructions";
+				theinstructionscreen.addEventListener(AudioEvent.PAN_CHANGE,start_playing_after_instructions);
+				theinstructionscreen.addEventListener(AudioEvent.MUTED_CHANGE,backToState1Function);
+				/*logincomponent.nameinput.setFocus();
+				logincomponent.addEventListener(AudioEvent.PAN_CHANGE,loggedinfunction);  
+				logincomponent.addEventListener(AudioEvent.MUTED_CHANGE,backToState1Function);*/
+			}
+			
+			protected function start_playing_after_instructions(event:Event):void
+			{
+				theinstructionscreen.removeEventListener(AudioEvent.PAN_CHANGE,start_playing_after_instructions);
+				theinstructionscreen.removeEventListener(AudioEvent.MUTED_CHANGE,backToState1Function);
+				currentState="GetNameState";
+				logincomponent.addEventListener(AudioEvent.PAN_CHANGE,loggedinfunction);  
+				logincomponent.addEventListener(AudioEvent.MUTED_CHANGE,backToState1Function);
+				logincomponent.nameinput.setFocus();
+			}
+			
+			protected function loggedinfunction(event:AudioEvent):void //triggered otan vazoume onoma
+			{
+				username=logincomponent.loggedinusername;
+				currentState="roomchoice";
+				roomcomponent.addEventListener(AudioEvent.PAN_CHANGE,roomfunction);
+				roomcomponent.addEventListener(AudioEvent.MUTED_CHANGE,backToState1Function);
+				roomcomponent.playerusername=username;
+				if(roomcomponent.dataGrid.columns.length>0){roomcomponent.dataGrid.selectedIndex=0;roomcomponent.dataGrid.setFocus();}
+				
+			}
+			
+			protected function backToState1Function(event:AudioEvent):void
+			{ 
+				if(currentState=="GetNameState"){
+					logincomponent.removeEventListener(AudioEvent.PAN_CHANGE,loggedinfunction);
+					logincomponent.removeEventListener(AudioEvent.MUTED_CHANGE,backToState1Function);	
+				}
+				else if(currentState=="roomchoice"){
+					roomcomponent.removeEventListener(AudioEvent.PAN_CHANGE,roomfunction);
+					roomcomponent.removeEventListener(AudioEvent.MUTED_CHANGE,backToState1Function);
+				}
+				else if(currentState=="Instructions"){
+					theinstructionscreen.removeEventListener(AudioEvent.PAN_CHANGE,start_playing_after_instructions);
+					theinstructionscreen.removeEventListener(AudioEvent.MUTED_CHANGE,backToState1Function);
+				}
+				currentState="State1";
+				thewelcomeScreen.addEventListener(AudioEvent.PAN_CHANGE,start_playing);
+				thewelcomeScreen.addEventListener(AudioEvent.MUTED_CHANGE,show_instructions);
+				this.addEventListener(KeyboardEvent.KEY_DOWN,enterPressed);
+				this.setFocus();
+				
+			}
+			
+			
+			protected function roomfunction(event:AudioEvent):void //triggered otan exoume epileksei dwmatio
+			{
+				this.playernumber=roomcomponent.playernumber;
+				this.roomnumber=roomcomponent.playerroomnumber;
+				//Alert.show("I got playernumber "+playernumber.toString()+" in room "+roomnumber.toString());
+				currentState="rpsls";
+				rpslsGroup.username=username; //pernaei sigoura?
+				rpslsGroup.roomnumber=roomnumber;
+				rpslsGroup.playernumber=playernumber;
+			}
+			
+			
+			
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="State1"/>
+		<s:State name="Instructions" />
+		<s:State name="GetNameState"/>
+		<s:State name="roomchoice"/>
+		<s:State name="rpsls"/>
+	</s:states>
+	<fx:Declarations>
+	</fx:Declarations>
+	<s:Scroller id="myScroller" height="100%" width="100%">
+		<s:Group id="mygroup" width="100%" height="100%" >
+			
+			<s:BorderContainer id="container" backgroundColor="#888888" backgroundAlpha=".5"  borderStyle="inset" borderColor="#000000" borderWeight="10" cornerRadius="15" dropShadowVisible="true" width="1150" height="550" x="14" y="12">
+				<!--			<s:BorderContainer id="container" backgroundColor="#6A2511" backgroundAlpha=".5"  borderStyle="inset" borderColor="#843622" borderWeight="10" cornerRadius="15" dropShadowVisible="true" width="1150" height="550" x="14" y="12">-->
+				<!--<s:ButtonBar id="buttonBar" dataProvider="{views}" top="50" left="10" includeIn="State1,GetNameState" alpha.GetNameState=".5" skinClass="skins.buttonBarkSkin" />
+				<mx:ViewStack id="views"  top="92" resizeToContent="true" includeIn="State1,GetNameState" >
+				<s:NavigatorContent id="home" label="{centralStrings.mainCurrentArray.getItemAt(OurStrings.BUTTONBAR_HOME)}">-->
+				<components:WelcomeScreen id="thewelcomeScreen" includeIn="State1" borderVisible="false" dropShadowVisible="false" backgroundAlpha="0.0" alpha.GetNameState="0.5" currentArray="{centralStrings.mainCurrentArray}"/>
+				<components:InstructionScreen id="theinstructionscreen" includeIn="Instructions" borderVisible="false" dropShadowVisible="false" backgroundAlpha="0.0" currentArray="{centralStrings.mainCurrentArray}"/>	
+				<!--</s:NavigatorContent>
+				<s:NavigatorContent id="products" label="{centralStrings.mainCurrentArray.getItemAt(OurStrings.BUTTONBAR_INFO)}">
+				<components:InfoScreen id="theinfoscreen" borderVisible="false" dropShadowVisible="false" backgroundAlpha="0.0" alpha.GetNameState="0.5" currentArray="{centralStrings.mainCurrentArray}"/>
+				</s:NavigatorContent>
+				<s:NavigatorContent id="tutorial" label="{centralStrings.mainCurrentArray.getItemAt(OurStrings.BUTTONBAR_INSTRUCTION)}">  
+				<components:InstructionScreen id="theinstructionscreen" borderVisible="false" dropShadowVisible="false" backgroundAlpha="0.0" currentArray="{centralStrings.mainCurrentArray}"/>
+				</s:NavigatorContent>
+				</mx:ViewStack>-->
+				<components:RoomChoice includeIn ="roomchoice" id="roomcomponent" borderVisible="false" dropShadowVisible="false" backgroundAlpha="0.0" currentArray="{centralStrings.mainCurrentArray}" width="100%" height="100%"/>
+				<components:NameGetter includeIn="GetNameState" id="logincomponent" verticalCenter="0" left="80" dropShadowVisible="false" backgroundColor="#FBB92B" backgroundAlpha="1" currentArray="{centralStrings.mainCurrentArray}"  borderColor="#711010" borderVisible="true"/>
+				<components:Game includeIn="rpsls" id="rpslsGroup" currentArray="{centralStrings.mainCurrentArray}" width="100%" height="100%" creationComplete="container.addElement(rpslsGroup.storyImagesBorderContainer);rpslsGroup.storyImagesBorderContainer.x=8;rpslsGroup.storyImagesBorderContainer.y=8;"/>
+				<!--<mx:SWFLoader visible="false" source="@Embed('./resources/images/english_icon.jpg')" id="englishicon"  x="720" y="10" alpha="0.5" click="centralStrings.toEnglish()" mouseOver="englishicon.alpha-=0.3" mouseOut="englishicon.alpha+=0.3" includeIn="State1, GetNameState"/>
+				<mx:SWFLoader visible="false" source="@Embed('./resources/images/greek_icon.jpg')" id="greekicon"  x="664" y="10" alpha="0.5" click="centralStrings.toGreek()" mouseOver="greekicon.alpha-=0.3" mouseOut="greekicon.alpha+=0.3" includeIn="State1, GetNameState"/>-->
+				<s:RichText fontSize="16" text="Ελληνικά" id="greekicon" alpha="0.5" x="679" y="10" click="greekicon.alpha=1;englishicon.alpha=0.5;centralStrings.toGreek()" mouseOver="greekicon.alpha-=0.3" mouseOut="greekicon.alpha+=0.3" includeIn="State1"/>
+				<s:RichText fontSize="16" text="English" id="englishicon" alpha="1" x="620" y="10" click="greekicon.alpha=0.5;englishicon.alpha=1;centralStrings.toEnglish()" mouseOver="englishicon.alpha-=0.3" mouseOut="englishicon.alpha+=0.3" includeIn="State1"/>
+				
+				<mx:Image alpha.GetNameState="0.2" includeIn="State1, GetNameState, roomchoice" source="@Embed('./resources/images/ar2.jpg')" alpha="0.7" width="329" height="278" x="801" y="0" />
+				<mx:Image alpha.GetNameState="0.2" includeIn="State1, GetNameState, roomchoice" source="@Embed('./resources/images/ar1.jpg')" alpha="0.7" width="329" height="276" x="801" y="263" />
+				
+				
+			</s:BorderContainer>
+		</s:Group>
+	</s:Scroller>
+</s:Application>

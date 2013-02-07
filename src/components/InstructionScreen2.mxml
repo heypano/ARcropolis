@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   backgroundColor="#555555" backgroundAlpha="1"  borderStyle="inset" borderColor="#000000" borderWeight="10" cornerRadius="15" dropShadowVisible="false"
+				   xmlns:logintableservice="services.logintableservice.*"    width="810" height="535">
+	<fx:Script>
+		<![CDATA[
+			import localization.OurStrings;			
+			import mx.collections.ArrayCollection;
+			[Bindable]
+			public var currentArray:ArrayCollection;//Xreiazetai se ola ta components gia to localization
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Label id="title"  text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_TITLE)}"  x="27" y="18" fontSize="30" fontWeight="bold"/>
+	<s:BorderContainer id="theborder" borderColor="#000000" borderWeight="2" backgroundColor="#FFFFFF" backgroundAlpha="0.5" cornerRadius="18" x="27" y="74" width="737" >
+		
+		<s:RichText id="maintext1"  fontSize="16"  lineHeight="30" width="750" verticalCenter="0" horizontalCenter="0" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" text="How to play: When it's your turn to play: &#x9;• Choose the correct card and show it to the camera &#x9;• If you chose the right card, your turn is over and it's your opponent's turn &#x9;• If you chose the wrong card, you lose one life and you can try again &#x9;• If you run out of lifes, you lose the game, so be careful! &#x9;• If noone runs out of lifes, you both win when you complete the story! The concept: &#x9;• Your goal is to help the storyteller remember the story he's trying to tell you &#x9;• Each story is divided into 12 seperate scenes, each of them represented by a card &#x9;• Before playing a specific card, make sure that it's the right one &#x9;• There are 7 cards that include something that never happened, so be careful! ">
+			<s:content>
+				<s:span textDecoration="underline" fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT2_1)}" /><s:br /><s:span text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT2_2)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT2_3)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXΤ2_4)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT2_5)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT2_6)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT2_7)}" /><s:br />
+				<s:span textDecoration="underline" fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT3_1)}" /><s:br /><s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT3_2)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT3_3)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXΤ3_4)}" /><s:br />
+				<s:tab /><s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.INSTRUCTIONS_MAINTEXT3_5)}" /><s:br />
+			</s:content>
+		</s:RichText>
+	</s:BorderContainer>
+</s:BorderContainer>
+
+

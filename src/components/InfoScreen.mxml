@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   backgroundColor="#6DB6C6" backgroundAlpha=".5"
+				   borderStyle="inset" borderColor="#84CBDA" borderWeight="10"
+				   cornerRadius="15" dropShadowVisible="true" xmlns:logintableservice="services.logintableservice.*" creationComplete="init()" >
+	<fx:Script>
+		<![CDATA[
+			import localization.OurStrings;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert; //Xreiazetai se ola ta components gia to localization
+			[Bindable]//Xreiazetai se ola ta components gia to localization
+			public var currentArray:ArrayCollection;//Xreiazetai se ola ta components gia to localization
+			public var fileRef:FileReference = new FileReference();
+			public var urlreq:URLRequest=new URLRequest("./resources/patterns/patterns01.pdf");
+			
+			public function init():void{
+				fileRef.addEventListener(Event.COMPLETE,completealert);
+			}
+			public function completealert(event:Event):void{
+				Alert.show("Your download is complete");
+			}
+			
+			protected function label1_clickHandler(event:MouseEvent):void
+			{
+				/*if (!fileRef.download(urlreq)) {
+					trace("dialog box failed to open.");
+				}*/
+				navigateToURL( urlreq);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Label id="infotext"  text="{currentArray.getItemAt(OurStrings.INFOSCREEN_TEXT1)}" fontSize="16" top="10" left="57" width="600" />
+</s:BorderContainer>

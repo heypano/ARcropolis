@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx"  xmlns:valueObjects="valueObjects.*" xmlns:movesservice="services.movesservice.*" creationComplete="bordercontainer1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import localization.OurStrings;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectUtil;
+			
+			import org.osmf.events.AudioEvent;
+			
+			import valueObjects.Moves; //Xreiazetai se ola ta components gia to localization
+			[Bindable]//Xreiazetai se ola ta components gia to localization
+			public var currentArray:ArrayCollection;//Xreiazetai se ola ta components gia to localization
+			public const EMPTYPLAYERSPOT:String = "-100";
+			[Bindable] //<-- edw allaska kati
+			public var playerusername:String;
+			public var playernumber:int;
+			public var playerroomnumber:int;
+			[Bindable]
+			protected var moves:ArrayCollection=new ArrayCollection();;
+			protected var suitableRoomFound:Boolean;
+			protected var tempMove:Moves=new Moves();
+			protected var theselectedroom:int;
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				getAllMovesResult.addEventListener(ResultEvent.RESULT,fillmoves);
+				getThisMoveResult.addEventListener(ResultEvent.RESULT,roomhasbeenselected);
+				getallmoves();
+				dataGrid.addEventListener(KeyboardEvent.KEY_DOWN,enterPressed);
+				//<-- edw allaska kati
+			}
+			protected function getallmoves():void
+			{
+				getAllMovesResult.token = movesService.getAllMoves();
+			}
+			
+			protected function fillmoves(event:ResultEvent):void
+			{
+				var i:int;
+				if(moves!=null)moves.removeAll();
+				//moves.removeAll(); //OXI, KAKO
+				suitableRoomFound=false;
+				for(i=0;i<getAllMovesResult.lastResult.length;i++)
+				{
+					//tempMove.
+					tempMove=new Moves();
+					tempMove.room=getAllMovesResult.lastResult[i].room;
+					tempMove.move1=getAllMovesResult.lastResult[i].move1;
+					tempMove.move2=getAllMovesResult.lastResult[i].move2;
+					tempMove.player1=new String(getAllMovesResult.lastResult[i].player1);
+					tempMove.player2=new String(getAllMovesResult.lastResult[i].player2);
+					if(tempMove.player2==EMPTYPLAYERSPOT){
+						if(suitableRoomFound==false)suitableRoomFound=true;
+						tempMove.player2=currentArray.getItemAt(OurStrings.ROOM_CHOICE_EMPTY_SPOT).toString();
+						if(tempMove.player1==EMPTYPLAYERSPOT)tempMove.player1=currentArray.getItemAt(OurStrings.ROOM_CHOICE_EMPTY_SPOT).toString();
+						moves.addItem(tempMove);
+					}
+					
+				}
+				if(suitableRoomFound==false){
+					makenewroom();
+				}
+			}
+			
+			protected function makenewroom():void
+			{
+				tempMove=new Moves();
+				tempMove.player1="-100";
+				tempMove.player2="-100";
+				tempMove.move1=-1;
+				tempMove.move2=-1;
+				movesService.createMoves_autoroom(tempMove);
+				getallmoves();
+			}
+			
+			protected function selectedroom():void
+			{
+				if(dataGrid.selectedItem!=null){
+					theselectedroom=dataGrid.selectedItem.room;
+					getThisMoveResult.token = movesService.getMovesByID(theselectedroom);
+				}
+				else {
+					Alert.show(currentArray.getItemAt(OurStrings.ROOM_CHOICE_PLEASE_SELECT_A_ROOM_FIRST).toString());
+					//this.setFocus();
+				}
+				//Alert.show("Selected room is: "+dataGrid.selectedItem.room.toString());
+			}
+			
+			protected function roomhasbeenselected(event:ResultEvent):void
+			{
+				if((getThisMoveResult.lastResult.player1==getThisMoveResult.lastResult.player2)&&(getThisMoveResult.lastResult.player1==EMPTYPLAYERSPOT)) 
+				{
+					tempMove.room=getThisMoveResult.lastResult.room;
+					this.playerroomnumber=tempMove.room;
+					this.playernumber=1;
+					tempMove.player1=this.playerusername;
+					movesService.updateMovesPlayer1(tempMove);
+					//getallmoves();
+					dataGrid.removeEventListener(KeyboardEvent.KEY_DOWN,enterPressed);	
+					this.dispatchEvent(new AudioEvent(AudioEvent.PAN_CHANGE,true,false));
+				}
+				else if(getThisMoveResult.lastResult.player2==EMPTYPLAYERSPOT)
+				{
+					tempMove.room=getThisMoveResult.lastResult.room;
+					this.playerroomnumber=tempMove.room;
+					this.playernumber=2;
+					tempMove.player2=this.playerusername;
+					movesService.updateMovesPlayer2(tempMove);
+					//getallmoves();
+					dataGrid.removeEventListener(KeyboardEvent.KEY_DOWN,enterPressed);	
+					this.dispatchEvent(new AudioEvent(AudioEvent.PAN_CHANGE,true,false));
+				}
+				else {
+					Alert.show(currentArray.getItemAt(OurStrings.ROOM_CHOICE_PLEASE_PICK_ANOTHER_ROOM).toString());
+					//this.setFocus();
+					getallmoves();
+				}
+			}
+			
+			public function back_button_function(event:Event):void{//<-- edw allaksa kari
+				this.dispatchEvent(new AudioEvent(AudioEvent.MUTED_CHANGE,true,false));
+			}
+			
+			public function enterPressed(event:KeyboardEvent):void
+			{
+				if(event.keyCode==Keyboard.ENTER){
+					selectedroom();
+				}
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<movesservice:MovesService id="movesService" fault="Alert.show(event.fault.faultString + '\n' + event.fault.faultDetail)" showBusyCursor="true"/>
+		<s:CallResponder id="getAllMovesResult" />
+		<s:CallResponder id="getThisMoveResult" />
+	</fx:Declarations>
+	<s:Label id="HeyNameLabel" text="{'Hey '+playerusername+'!'}" x="50" y="50" fontWeight="bold" fontSize="20"/>
+	<s:BorderContainer borderColor="#000000" borderWeight="2" backgroundColor="#FFFFFF" backgroundAlpha="0.5" cornerRadius="18" x="50" y="80" width="620">
+		
+		<s:RichText id="roomChoiceInstructions"  fontSize="16"  lineHeight="30" verticalCenter="0" horizontalCenter="0" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" width="600">
+			<s:span text="{currentArray.getItemAt(OurStrings.ROOM_CHOICE_TEXT1)}"/><s:br /><s:tab /><s:span text="{currentArray.getItemAt(OurStrings.ROOM_CHOICE_TEXT2)}" />
+			<s:br /><s:tab /><s:span text="{currentArray.getItemAt(OurStrings.ROOM_CHOICE_TEXT3)}" /><s:br /><s:span text="{currentArray.getItemAt(OurStrings.ROOM_CHOICE_TEXT4)}" />
+		</s:RichText>
+	</s:BorderContainer>
+	<mx:DataGrid  id="dataGrid" dataProvider="{moves}"  doubleClickEnabled="true" doubleClick="selectedroom();" x="50" y="260" chromeColor="#FFFFFF" selectionColor="#8F8F8F" focusColor="#FFFFFF" symbolColor="#FFFFFF" rollOverColor="#C4C4C4" borderVisible="true" borderColor="#000000" dropShadowVisible="true"  creationComplete="if(dataGrid.columns.length>0){dataGrid.selectedIndex=0;dataGrid.setFocus();}">
+		<mx:columns>
+			<mx:DataGridColumn headerText="{currentArray.getItemAt(OurStrings.ROOM_CHOICE_ROOMNO)}"    dataField="room"    backgroundColor="#FFFFFF"  fontSize="16" fontWeight="normal" width="80"/>
+			<mx:DataGridColumn headerText="{currentArray.getItemAt(OurStrings.ROOM_CHOICE_PLAYER1)}" dataField="player1" backgroundColor="#FFFFFF"  fontSize="16" fontWeight="normal" width="180"/>
+			<mx:DataGridColumn headerText="{currentArray.getItemAt(OurStrings.ROOM_CHOICE_PLAYER2)}" dataField="player2" backgroundColor="#FFFFFF"  fontSize="16" fontWeight="normal" width="180"/>
+		</mx:columns>
+	</mx:DataGrid>
+	<s:Button x="50" y="{dataGrid.y+dataGrid.height+10}" label="{currentArray.getItemAt(OurStrings.ROOM_CHOICE_SELECT)}" id="submitButton" click="selectedroom()"/>
+	<s:Button x="{dataGrid.x+dataGrid.width+10}" y="{dataGrid.y}" label="{currentArray.getItemAt(OurStrings.ROOM_CHOICE_REFRESH)}" id="refreshButton" click="getallmoves()"/>
+	<s:Button x="{refreshButton.x}" y="{refreshButton.y+30}" label="{currentArray.getItemAt(OurStrings.ROOM_CHOICE_CREATE_NEW_ROOM)}" id="newRoomButton" click="makenewroom()"/>
+	<mx:SWFLoader source="@Embed('resources/images/backarrow.png')" x="5" y="5" id="back_button"  click="back_button_function(event)" />
+	
+</s:BorderContainer>

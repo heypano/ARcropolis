@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<model xmlns="http://ns.adobe.com/Fiber/1.0">
+  <annotation name="ActionScriptGeneration">
+    <item name="FullyQualifyReferences">true</item>
+  </annotation>
+  <service name="MovesService">
+    <annotation name="ActionScriptGeneration">
+      <item name="Source">MovesService</item>
+      <item name="ServiceType">RemoteObject</item>
+      <item name="Package">services.movesservice</item>
+      <item name="Endpoint">gateway.php</item>
+      <item name="Destination">MovesService</item>
+    </annotation>
+    <annotation name="ServiceTypeGroup">
+      <item name="ServiceBackendType">PHP</item>
+    </annotation>
+    <annotation name="ServiceConfig">
+      <item name="PHP_RELATIVE_LOCATION">bob/services/MovesService.php</item>
+      <item name="PHP_SERVER_ROOT">C:\wamp\www</item>
+      <item name="DEFAULT_ENTITY_PACKAGE">valueObjects</item>
+      <item name="PHP_SERVICES_FOLDER">C:\wamp\www\whatever\services</item>
+      <item name="PHP_LOCATION">C:/wamp/www/bob/services/MovesService.php</item>
+      <item name="LINKED_FILE">MovesService_MovesService.php</item>
+      <item name="PHP_SERVER_ROOT_URL">http://localhost</item>
+      <item name="ABSOLUTE_ENDPOINT">http://localhost/whatever/gateway.php</item>
+      <item name="PHP_CLASS_NAME">MovesService</item>
+    </annotation>
+    <function name="getAllMoves" return-type="opaque[]">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="getMovesByID" arguments="itemID:opaque" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="createMoves" arguments="item:opaque" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="createMoves_autoroom" arguments="item:opaque" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="updateMovesPlayer1" arguments="item:opaque" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="updateMovesPlayer2" arguments="item:opaque" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="updateMovesMove1" arguments="item:opaque" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="updateMovesMove2" arguments="item:opaque" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="deleteMoves" arguments="itemID:opaque" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="count" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="getMoves_paged" arguments="startIndex:opaque,numItems:opaque" return-type="opaque[]">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque,opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+  </service>
+  <service name="LogintableService2">
+    <annotation name="ActionScriptGeneration">
+      <item name="Source">LogintableService2</item>
+      <item name="ServiceType">RemoteObject</item>
+      <item name="Package">services.logintableservice2</item>
+      <item name="Endpoint">gateway.php</item>
+      <item name="Destination">LogintableService2</item>
+    </annotation>
+    <annotation name="ServiceTypeGroup">
+      <item name="ServiceBackendType">PHP</item>
+    </annotation>
+    <annotation name="ServiceConfig">
+      <item name="PHP_RELATIVE_LOCATION">bob/services/LogintableService2.php</item>
+      <item name="PHP_SERVER_ROOT">C:\wamp\www</item>
+      <item name="DEFAULT_ENTITY_PACKAGE">valueObjects</item>
+      <item name="PHP_SERVICES_FOLDER">C:\wamp\www\whatever\services</item>
+      <item name="PHP_LOCATION">C:/wamp/www/bob/services/LogintableService2.php</item>
+      <item name="LINKED_FILE">LogintableService2.php</item>
+      <item name="PHP_SERVER_ROOT_URL">http://localhost</item>
+      <item name="ABSOLUTE_ENDPOINT">http://localhost/whatever/gateway.php</item>
+      <item name="PHP_CLASS_NAME">LogintableService2</item>
+    </annotation>
+    <function name="getAllLogintable" return-type="opaque[]">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="getLogintableByID" arguments="itemID:opaque" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="createLogintable" arguments="item:opaque" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="updateLogintable" arguments="item:opaque" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="deleteLogintable" arguments="itemID:opaque" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="count" return-type="opaque">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="getLogintable_paged" arguments="startIndex:opaque,numItems:opaque" return-type="opaque[]">
+      <annotation name="analyze group">
+        <item name="analyzed">false</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque,opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+  </service>
+  <service name="ScoretableService">
+    <annotation name="ActionScriptGeneration">
+      <item name="Source">ScoretableService</item>
+      <item name="ServiceType">RemoteObject</item>
+      <item name="Package">services.scoretableservice</item>
+      <item name="Endpoint">gateway.php</item>
+      <item name="Destination">ScoretableService</item>
+    </annotation>
+    <annotation name="ServiceTypeGroup">
+      <item name="ServiceBackendType">PHP</item>
+    </annotation>
+    <annotation name="ServiceConfig">
+      <item name="PHP_RELATIVE_LOCATION">Gravity-debug/services/ScoretableService.php</item>
+      <item name="PHP_SERVER_ROOT">C:\wamp\www</item>
+      <item name="DEFAULT_ENTITY_PACKAGE">valueObjects</item>
+      <item name="PHP_SERVICES_FOLDER">C:\wamp\www\whatever\services</item>
+      <item name="PHP_LOCATION">C:/wamp/www/Gravity-debug/services/ScoretableService.php</item>
+      <item name="LINKED_FILE">ScoretableService.php</item>
+      <item name="PHP_SERVER_ROOT_URL">http://localhost</item>
+      <item name="ABSOLUTE_ENDPOINT">http://localhost/whatever/gateway.php</item>
+      <item name="PHP_CLASS_NAME">ScoretableService</item>
+    </annotation>
+    <function name="getAllScoretable" return-type="Scoretable[]">
+      <annotation name="analyze group">
+        <item name="analyzed">true</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="getScoretableByID" arguments="itemID:integer" return-type="Scoretable">
+      <annotation name="analyze group">
+        <item name="analyzed">true</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="createScoretable" arguments="item:Scoretable" return-type="integer">
+      <annotation name="analyze group">
+        <item name="analyzed">true</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="updateScoretable" arguments="item:Scoretable" return-type="void">
+      <annotation name="analyze group">
+        <item name="analyzed">true</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="deleteScoretable" arguments="itemID:integer" return-type="void">
+      <annotation name="analyze group">
+        <item name="analyzed">true</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="count" return-type="integer">
+      <annotation name="analyze group">
+        <item name="analyzed">true</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="getScoretable_paged" arguments="startIndex:integer,numItems:integer" return-type="Scoretable[]">
+      <annotation name="analyze group">
+        <item name="analyzed">true</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="inputParams">opaque,opaque</item>
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+  </service>
+  <entity name="Scoretable" persistent="true">
+    <annotation name="EntityProperties">
+      <item name="EntityOriginalName">Scoretable</item>
+    </annotation>
+    <annotation name="service Group">
+      <item name="service">ScoretableService</item>
+    </annotation>
+    <annotation name="ServerProperties">
+      <item name="IncludeRemoteClass">nonempty</item>
+    </annotation>
+    <annotation name="DataManagement">
+      <item name="create">createScoretable</item>
+      <item name="update">updateScoretable</item>
+      <item name="get">getScoretableByID</item>
+      <item name="delete">deleteScoretable</item>
+      <item name="fillFunc">getAllScoretable,getScoretable_paged</item>
+      <item name="managingService">ScoretableService</item>
+    </annotation>
+    <annotation name="getScoretableByID">
+      <item name="propertySpecifier">name,time,id</item>
+    </annotation>
+    <annotation name="getAllScoretable">
+      <item name="propertySpecifier">name,time,id</item>
+    </annotation>
+    <annotation name="getScoretable_paged">
+      <item name="propertySpecifier">name,time,id</item>
+      <item name="pagingEnabled">true</item>
+      <item name="positionalPagingParameters">true</item>
+      <item name="countOperation">count</item>
+    </annotation>
+    <annotation name="ActionScriptGeneration">
+      <item name="Package">valueObjects</item>
+    </annotation>
+    <property name="name" type="string" required="true"/>
+    <property name="time" type="double" required="true"/>
+    <id name="id" type="integer"/>
+  </entity>
+</model>

@@ -1,0 +1,948 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:movesservice="services.movesservice.*"
+				   xmlns:valueObjects="valueObjects.*"
+				   xmlns:components="components.*"
+				   creationComplete="initGroup()" backgroundAlpha="0.0" contentBackgroundAlpha="0.0" borderVisible="false"  width="1200" height="600" xmlns:scoretableservice="services.scoretableservice.*" xmlns:attributes="sandy.materials.attributes.*" >
+	
+	
+	<fx:Script>
+		<![CDATA[
+			import ARfiles.FlarClass;
+			
+			import flash.display.Sprite;
+			import flash.events.ErrorEvent;
+			import flash.events.Event;
+			import flash.filters.BitmapFilterQuality;
+			import flash.geom.Rectangle;
+			
+			import localization.OurStrings;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.states.State;
+			
+			import org.osmf.events.AudioEvent;
+			import org.osmf.events.TimeEvent;
+			
+			import support.MarkerPlane;
+			
+			import valueObjects.Moves; //Xreiazetai se ola ta components gia to localization
+			public static const ROCK:int = 0;
+			public static const PAPER:int = 1;
+			public static const SCISSORS:int = 2;
+			public static const LIZARD:int = 3;
+			public static const SPOCK:int = 4;
+			
+			[Bindable]//Xreiazetai se ola ta components gia to localization
+			public var currentArray:ArrayCollection;//Xreiazetai se ola ta components gia to localization
+			[Bindable]
+			public var username:String; //metavlhth pou perasthke apeksw
+			public var playernumber:int;//metavlhth pou perasthke apeksw
+			public var roomnumber:int;//metavlhth pou perasthke apeksw
+			[Bindable] 
+			private var rpsGame:FlarClass;			
+			private var wechose:int=-1; //poio pattern id dialekse o xrhsths
+			private var opponentchose:int=-1; //poio pattern dialekse o antipalos
+			private var augmentingint:int=0;
+			private var playbuttonclicked:Boolean=false; //exei paththei to player button
+			private var markergotten:Boolean=false;      //exoume parei to marker
+			private var secondplayerresponded:Boolean=false;
+			private var isAnyonehere:Boolean=false;
+			private var rpslsfinished:Boolean=false;
+			private var ourturn:Boolean=false; // gia to an einai h seira mas na paiksoume h oxi
+			private var dataBaseUpdated:Boolean=false; //gia na doume an perasthke h karta mas th vash
+			private var timer:Timer = new Timer(5000);	//o timer pou xrhsimopoieitai gia na paroume thn apanthsh apo ton allo paikth
+			private var hideImagesDelayTimer:Timer = new Timer(5000);	//o timer pou xrhsimopoieitai gia na prolavoun na doun oi paiktes ti paiksane oi alloi
+			private var isanyoneheretimer:Timer = new Timer(3000); //o timer pou xrhsimopoieitai gia na doume an exei mpei allos paikths
+			private var heartstimer:Timer = new Timer(3000); //o timer gia na doume tis zwes tou antipalou tin prwti fora
+			private var opponentAbandoned:Timer = new Timer(600000); //prepei na allaksoume thn timh sta 10 lepta
+			private var scrollerTimer:Timer = new Timer (1000); //timer gia na katevazoume to scroller
+			private var fadingTimer:Timer = new Timer (50); // gia na kanoume fade to feedback
+			[Bindable]
+			private var secondPlayerName:String;
+			private var lastScrollBarMaximum:Number=-1;
+			private var u:UIComponent;
+			private var firstplayeroutcome:int=-1;
+			private var nextcorrectanswer:int=5; // to prwto pattern pou tha einai swsto
+			private var ourlives:int=6;
+			private var opponentslives:int=-1;
+			public var instructionscreeninstance:InstructionScreen2;
+			
+			/* *************************Sunarthsh pou kaleitai me to creationComplete event************************* */
+			
+			protected function initGroup():void
+			{	
+				this.addEventListener(KeyboardEvent.KEY_DOWN,enterPressed); //gia na ginei play otan pataei o paikths enter
+				this.setFocus();
+				getAllMovesResult.addEventListener(ResultEvent.RESULT,handleopponentsrespones); 
+				resultUpdate.addEventListener(ResultEvent.RESULT,databaseupdatedtrue); 
+				idResult.addEventListener(ResultEvent.RESULT,waitforresult); 
+				/* Event Listeners gia ta Timers */
+				timer.addEventListener(TimerEvent.TIMER,handleTimerEvent);
+				isanyoneheretimer.addEventListener(TimerEvent.TIMER,handleTimerEvent);
+				opponentAbandoned.addEventListener(TimerEvent.TIMER,opponent_abandoned);
+				heartstimer.addEventListener(TimerEvent.TIMER,gethearts);
+				scrollerTimer.addEventListener(TimerEvent.TIMER, bringTheScrollerDown);
+				fadingTimer.addEventListener(TimerEvent.TIMER,fadeFeedback);
+				/* Ksekiname na Elegxoume an exei mpei allos paikths */
+				isanyoneheretimer.start();
+				mp3Player.pause();
+				fixWidth(feedbacklabel,1200);
+				//fadingTimer.start();
+			}
+			
+			/* Sunarthsh gia to otan patietai to enter */
+			
+			public function enterPressed(event:KeyboardEvent):void
+			{
+				if(event.keyCode==Keyboard.ENTER)Playbutton_clickHandler(event);
+			}
+			
+			/* *************************Synarthseis pou xrhsimopoiountai gia tis zwes tou antipalou************************* */
+			
+			protected function gethearts(event:TimerEvent):void{ //sunarthsh pou kaloume me to timer
+				getMovesByID(roomnumber); //kaloume th sugkekrimenh sunarthsh me to roomnumber gia na vroume thn eggrafh
+				if(opponentslives>0)heartstimer.stop(); //shmainei oti vrhkame timh -- an ginei 0 to xeirizomaste mesa sto getMovesByID
+			}
+			
+			protected function getMovesByID(itemID:int):void //pairnoume th sugkekrimenh eggrafh --xrhsimopoieitai mono gia tis zwes tou antipalou. otane erthei to result kaleitai to opponent_lives() 
+			{
+				getMovesByIDResult.token = movesService.getMovesByID(itemID); 
+			}
+			
+			protected function opponent_lives():void //h sunarthsh getMovesByID exei sumplhrwsei sto getMovesByIDResult.lastresult thn teleutaia egrafh opote to xeirizomaste analoga
+			{
+				var image:Image;
+				var i:int;
+				var previousLives:int;
+				previousLives=opponentslives;
+				if(playernumber==1){ //allazei to pedio pou koitame analoga me to an eimaste o paikths 1 h o paikrhs 2
+					if(int(getMovesByIDResult.lastResult.player2)!=opponentslives){ //an exei allaksei kati apo thn teleutaia fora pou koitaksame
+						opponentslives=getMovesByIDResult.lastResult.player2;
+						/* ftiaxnoume tis eikones */
+						rpsGame.setEnemyHeart(opponentslives);
+						if((opponentslives<=0)&&(heartstimer.currentCount>10)){ //currentCount>10 gia na mh nomizei oti o allos paikths efuge epeidh argei h sundesh
+							//opponenliveslabel.visible==false;
+							Alert.show(currentArray.getItemAt(OurStrings.GAME_OPPONENT_LOST).toString(),currentArray.getItemAt(OurStrings.GAME_GAME_OVER).toString());
+							currentState="endstate"; //teleiwse to paixnidi
+							
+							
+							/* prepei na ginei kai kati akoma upothetw */
+							
+							
+						}
+						if((previousLives>0)&&(opponentslives>0)&&(previousLives>opponentslives)){
+							
+							/*fading the text*/
+							fadingText.text=currentArray.getItemAt(OurStrings.GAME_OPPONENT_MISTAKE_LIFE).toString();
+							fadingTimer.reset();
+							feedbackLivesAndTurnsContainer.visible=true;
+							feedbackLivesAndTurnsContainer.alpha=1;
+							fadingTimer.start();
+							/* */	
+						}
+					}	
+				}
+				else if(playernumber==2){
+					if(int(getMovesByIDResult.lastResult.player1)!=opponentslives){
+						opponentslives=getMovesByIDResult.lastResult.player1;
+						/* ftiaxnoume tis eikones */
+						rpsGame.setEnemyHeart(opponentslives);
+						if((opponentslives<=0)&&(heartstimer.currentCount>10)){ //currentCount>10 gia na mh nomizei oti o allos paikths efuge epeidh argei h sundesh
+							Alert.show(currentArray.getItemAt(OurStrings.GAME_OPPONENT_LOST).toString(),currentArray.getItemAt(OurStrings.GAME_GAME_OVER).toString());
+							currentState="endstate";//teleiwse to paixnidi
+							
+							
+							/* prepei na ginei kai kati akoma upothetw */
+							
+							
+						}
+						if((previousLives>0)&&(opponentslives>0)&&(previousLives>opponentslives)){
+							
+							/*fading the text*/
+							fadingText.text=currentArray.getItemAt(OurStrings.GAME_OPPONENT_MISTAKE_LIFE).toString();
+							fadingTimer.reset();
+							feedbackLivesAndTurnsContainer.visible=true;
+							feedbackLivesAndTurnsContainer.alpha=1;
+							fadingTimer.start();
+							/**/	
+						}
+					}
+				}
+			}
+			
+			/* *************************Synarthsh pou elegxei ana 10 lepta an kapoios den exei antapokrithei gia na termatisoume************************* */
+			
+			protected function opponent_abandoned(event:TimerEvent):void{
+				if((isAnyonehere==true)&&((rpslsfinished==false)||((rpslsfinished==true)&&(ourturn==false)))) //an exei mpei paikths kai paizoume rpsls h den einai h seira mas kai perasei pollh wra thewroume oti teleiwse
+				{ 
+					/*
+					
+					Pragmata pou tha ginontai otan thewroume oti o antipalos den antapokrinetai pleon
+					
+					
+					*/
+				}
+				
+			}
+			
+			/* *************************Synarthseis pou xrhsimopoiountai gia to RPSLS kai gia na doume an uparxei antipalos************************* */
+			
+			protected function handleTimerEvent(event:TimerEvent):void 
+			{ 
+				idResult.token = movesService.getMovesByID(roomnumber); //to timer kanei sunexeia queries sth vash gia na eksetasoume an exei apanthsei o antipalos sto rpsls, otan erthei to result kaleitai h waitforresult (MXML declarations)
+			}
+			
+			protected function databaseupdatedtrue(event:ResultEvent):void{dataBaseUpdated=true;} //xrhsimopoieitai sto waitforresult gia na mh nomizoume oti uparxei isopalia enw apla den exoun perastei ta dedomena
+			
+			protected function waitforresult(event:ResultEvent):void{ //triggered apo to idresult -- mono gia to rpsls -- xrhsimopoieitai gia na doume an o antipalos exei apantisei
+				if(rpslsfinished==false){
+					var hasbeenadraw:Boolean=false; //Arxika upothetoume oti den exei uparksei isopalia
+					if((markergotten==true)&&(secondplayerresponded==false)){ //an exoume parei apanthsei apo ton diko mas paikth kai den exei apanthsei o allos
+						if((((playernumber==1)&&(idResult.lastResult.move1==-1))||((playernumber==2)&&(idResult.lastResult.move2==-1)))&&(dataBaseUpdated==true))hasbeenadraw=true; //paei na pei oti uphrkse isopalia kai to katalave o allos prwta
+						else if(playernumber==1){
+							if(idResult.lastResult.move2!=-1){ //shmainei oti o allos paikths epaikse
+								opponentchose=idResult.lastResult.move2;
+								secondplayerresponded=true;
+							}
+						}
+						else if(playernumber==2){
+							if(idResult.lastResult.move1!=-1){ //shmainei oti o allos paikths epaikse
+								opponentchose=idResult.lastResult.move1;
+								secondplayerresponded=true;
+							}
+						}
+						if(secondplayerresponded==true){ //o allos paikths exei epileksei kati (kai o prwtos) (an den isxuei auto shmainei oti hrthe isopalia apo panw)
+							firstplayeroutcome=rpsGame.decision(wechose,opponentchose); //vlepoume to teliko apotelesma					
+							if(firstplayeroutcome!=0){ //an den einai isopalia
+								/*ftiaxnoume tin eikona tou antipalou*/
+								if(opponentchose==0)opponentchoiceimage.source="resources/images/rocksmall.png";
+								else if(opponentchose==1)opponentchoiceimage.source="resources/images/papersmall.png";
+								else if(opponentchose==2)opponentchoiceimage.source="resources/images/scissorssmall.png";
+								else if(opponentchose==3)opponentchoiceimage.source="resources/images/lizardsmall.png";
+								else if(opponentchose==4)opponentchoiceimage.source="resources/images/spocksmall.png";
+								/*Leme ti egine*/
+								//simpleInstructionLabel.text+="\n"	
+								//simpleInstructionLabel.text=rpsGame.feedbackString;
+								if(firstplayeroutcome==1){
+									if(wechose==0){
+										simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.H_PETRA).toString();
+										if(opponentchose==2)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.SUNTRIPTEI).toString()+currentArray.getItemAt(OurStrings.TO_PSALIDI).toString();
+										else if(opponentchose==3)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.SUNTRIPTEI).toString()+currentArray.getItemAt(OurStrings.TH_SAURA).toString();
+									}
+									else if(wechose==1){
+										simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.TO_XARTI).toString();	
+										if(opponentchose==0)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.KALUPTEI).toString()+currentArray.getItemAt(OurStrings.THN_PETRA).toString();
+										else if(opponentchose==4)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.KATARRIPTEI).toString()+currentArray.getItemAt(OurStrings.TO_SPOCK).toString();
+									}
+									else if(wechose==2){
+										simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.TO_PSALIDI).toString();	
+										if(opponentchose==1)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.KOVEI).toString()+currentArray.getItemAt(OurStrings.TO_XARTI).toString();
+										else if(opponentchose==3)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.APOKEFALIZEI).toString()+currentArray.getItemAt(OurStrings.TH_SAURA).toString();
+									}
+									else if(wechose==3){
+										simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.H_SAURA).toString();	
+										if(opponentchose==1)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.TRWEI).toString()+currentArray.getItemAt(OurStrings.TO_XARTI).toString();
+										else if(opponentchose==4)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.DHLHTHRIAZEI).toString()+currentArray.getItemAt(OurStrings.TO_SPOCK).toString();
+									}
+									else if(wechose==4){
+										simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.O_SPOCK).toString();	
+										if(opponentchose==0)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.EKSAULWNEI).toString()+currentArray.getItemAt(OurStrings.THN_PETRA).toString();
+										else if(opponentchose==2)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.SUNTRIPTEI).toString()+currentArray.getItemAt(OurStrings.TO_PSALIDI).toString();
+									}
+								}
+								else if(firstplayeroutcome==2){
+									if(opponentchose==0){
+										simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.H_PETRA).toString();
+										if(wechose==2)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.SUNTRIPTEI).toString()+currentArray.getItemAt(OurStrings.TO_PSALIDI).toString();
+										else if(wechose==3)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.SUNTRIPTEI).toString()+currentArray.getItemAt(OurStrings.TH_SAURA).toString();
+									}
+									else if(opponentchose==1){
+										simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.TO_XARTI).toString();	
+										if(wechose==0)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.KALUPTEI).toString()+currentArray.getItemAt(OurStrings.THN_PETRA).toString();
+										else if(wechose==4)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.KATARRIPTEI).toString()+currentArray.getItemAt(OurStrings.TO_SPOCK).toString();
+									}
+									else if(opponentchose==2){
+										simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.TO_PSALIDI).toString();	
+										if(wechose==1)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.KOVEI).toString()+currentArray.getItemAt(OurStrings.TO_XARTI).toString();
+										else if(wechose==3)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.APOKEFALIZEI).toString()+currentArray.getItemAt(OurStrings.TH_SAURA).toString();
+									}
+									else if(opponentchose==3){
+										simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.H_SAURA).toString();	
+										if(wechose==1)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.TRWEI).toString()+currentArray.getItemAt(OurStrings.TO_XARTI).toString();
+										else if(wechose==4)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.DHLHTHRIAZEI).toString()+currentArray.getItemAt(OurStrings.TO_SPOCK).toString();
+									}
+									else if(opponentchose==4){
+										simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.O_SPOCK).toString();	
+										if(wechose==0)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.EKSAULWNEI).toString()+currentArray.getItemAt(OurStrings.THN_PETRA).toString();
+										else if(wechose==2)simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.SUNTRIPTEI).toString()+currentArray.getItemAt(OurStrings.TO_PSALIDI).toString();
+									}
+								}
+								/*Allazoume ton listener tou timer -- pleon tha koitaei ti ginetai gia to allo paixnidi*/
+								timer.removeEventListener(TimerEvent.TIMER,handleTimerEvent); 
+								timer.addEventListener(TimerEvent.TIMER,checkforotherplayersdata); //vazoume ton timer na perimenei dunhtika gia plhrofories
+								if(firstplayeroutcome==1){//einai h seira mas na paiksoume ara o timer pou kanonika tha xrhsimopoioutan gia na koitaksoume ti kanei o antipalos den exei logo na trexei
+									ourturn=true;
+									simpleInstructionLabel.setStyle("color","#118800");
+									simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.GAME_RPSLS_WON_PLAY_FIRST);
+									timer.stop();
+								} 
+								else if(firstplayeroutcome==2){
+									ourturn=false;
+									opponentAbandoned.start();
+									simpleInstructionLabel.setStyle("color","#FF0000");
+									simpleInstructionLabel.text+=currentArray.getItemAt(OurStrings.GAME_RPSLS_LOST_PLAY_SECOND);
+									timer.start();
+									rpsGame.stopDetection();
+								}
+								hideImagesDelayTimer.addEventListener(TimerEvent.TIMER,hidethethings); //gia na krupsoume ta pragmata
+								hideImagesDelayTimer.start(); //exoume valei mia kathisterisi gia na fanei gia ligo to apotelesma
+							}
+						}
+						if((firstplayeroutcome==0)||(hasbeenadraw==true)){ //ksekinaei pali h arxikopoihsh an exei erthei isopalia
+							
+							simpleInstructionLabel.setStyle("color","#FF0000");
+							simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.GAME_RPSLS_DRAW_PLAY_AGAIN).toString();
+							hasbeenadraw=false;
+							markergotten=false;
+							dataBaseUpdated=false;
+							secondplayerresponded=false;
+							yourchoiceimage.source="resources/images/waitsmall.jpg";
+							opponentchoiceimage.source="resources/images/waitsmall2.jpg";
+							movesForId.room=roomnumber;
+							movesForId.move1=-1;
+							movesForId.move2=-1;
+							movesService.updateMovesMove1(movesForId);
+							movesService.updateMovesMove2(movesForId);
+							
+						}							
+						
+					}
+					if(isAnyonehere==false){ //xrhsimopoieitai mono sthn arxh gia na doume an exei mpei allos paikths
+						if(playernumber==1)
+						{
+							if(idResult.lastResult.player2!="-100")
+							{
+								secondPlayerName=idResult.lastResult.player2;
+								isanyoneheretimer.removeEventListener(TimerEvent.TIMER,handleTimerEvent);
+								isanyoneheretimer.stop();
+								feedbacklabel.text=currentArray.getItemAt(OurStrings.GAME_OPPONENT_NAME_IS)+secondPlayerName;
+								if(currentState=="rpslsstate")rpslsDescription.text=currentArray.getItemAt(OurStrings.GAME_RPSLS_YOU_ARE_NOW_PLAYING_RPSLS)+feedbacklabel.text;
+								fixWidth(feedbacklabel,700); //gia to feedbacklabel h swsth timh einai 700
+								isAnyonehere=true;
+								opponentAbandoned.start();
+							}
+						}
+						else if(playernumber==2)
+						{
+							if(idResult.lastResult.player1!="-100")
+							{
+								secondPlayerName=idResult.lastResult.player1;
+								isanyoneheretimer.removeEventListener(TimerEvent.TIMER,handleTimerEvent);
+								isanyoneheretimer.stop();
+								feedbacklabel.text=currentArray.getItemAt(OurStrings.GAME_OPPONENT_NAME_IS)+secondPlayerName;
+								if(currentState=="rpslsstate")rpslsDescription.text=currentArray.getItemAt(OurStrings.GAME_RPSLS_YOU_ARE_NOW_PLAYING_RPSLS)+feedbacklabel.text;
+								fixWidth(feedbacklabel,700);
+								isAnyonehere=true;
+								opponentAbandoned.start();
+							}
+						}
+					}
+				}
+			}
+			
+			protected function hidethethings(event:TimerEvent):void{ //auth h sunarthsh etoimazei ta pragmata gia to kanoniko paixnidi
+				//mp3Player.play();
+				if(ourturn==false)currentState="opponentturnstate";
+				else currentState="ourturnstate";
+				//ftiaxnoume tis kardies epanw sthn camera
+				rpsGame.initHeartsBar(ourlives,playerBorderId.width);
+				playerBorderId.visible=true;
+				enemyBorderId.visible=true;
+				
+				/*ftiaxnoume to instructionscreen*/
+				instructionscreeninstance=new InstructionScreen2();
+				//instructionscreeninstance.width=500;
+				//instructionscreeninstance.height=500;
+				instructionscreeninstance.x=10;
+				instructionscreeninstance.y=10;
+				instructionscreeninstance.visible=false;
+				instructionscreeninstance.currentArray=currentArray;
+				this.addElement(instructionscreeninstance);
+				
+				/*ananewnoume th vash*/
+				if(playernumber==1){
+					movesForId.room=roomnumber;
+					movesForId.move1=wechose;
+					movesForId.player1=ourlives.toString(); //to onoma apo dw kai pera xrhsimopoieitai gia na katagrafoume tis zwes mas
+					movesService.updateMovesMove1(movesForId);
+					movesService.updateMovesPlayer1(movesForId);
+					heartstimer.start(); //elegxoume tis zwes tou antipalou
+				}
+				else if(playernumber==2){
+					movesForId.room=roomnumber;
+					movesForId.move2=wechose;
+					movesForId.player2=ourlives.toString(); //to onoma apo dw kai pera xrhsimopoieitai gia na katagrafoume tis zwes mas
+					movesService.updateMovesMove2(movesForId);
+					movesService.updateMovesPlayer2(movesForId); //elegxoume tis zwes tou antipalou
+					heartstimer.start();
+				}
+				hideImagesDelayTimer.stop();
+				hideImagesDelayTimer.removeEventListener(TimerEvent.TIMER,hidethethings);
+				//simpleInstructionLabel.x+=50;
+				getMovesByID(roomnumber); //gia tis zwes tou antipalou
+				if(ourturn==true){
+					/*feedbacklabel2.text=username+"... Είναι η σειρά σου. Μμ... Πώς νομίζεις ότι αρχίζει η ιστορία της γέννησης της Αθηνάς και της Αθήνας; Τι έγινε πρώτα;"; */
+					feedbacklabel2.text=username+currentArray.getItemAt(OurStrings.GAME_OUR_TURN_HOW_BEGIN);
+					simpleInstructionLabel.setStyle("color","#118800");
+					simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.GAME_YOU_CAN_PLAY_NOW).toString();	
+				}
+				else {
+					/* feedbacklabel2.text=username+"... Περίμενε λίγο. Για να δούμε πώς πιστεύει ο/η "+secondPlayerName+" ότι άρχισε η ιστορία της γέννησης της Αθηνάς και της Αθήνας.."; */
+					feedbacklabel2.text=username+currentArray.getItemAt(OurStrings.GAME_LETS_SEE_HOW)+secondPlayerName+currentArray.getItemAt(OurStrings.GAME_THINKS_STORY_OF_ATHENA_BEGAN);
+					simpleInstructionLabel.setStyle("color","#FF4400");
+					simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.GAME_WAIT_FOR_YOUR_OPPONENT).toString();
+				}
+				/*To Rpsls teleiwse*/
+				rpslsfinished=true;
+			}
+			
+			/* *************************Sunarthsh pou xrhsimopoieitai gia to ti pairnoume apo to flar sto RPSLS KAI sto ARCROPOLIS************************* */
+			
+			protected function wegotthemarker(e:Event):void{ //sunarthsh pou deixnei oti o paikths dialekse marker
+				if(rpslsfinished==false){ //RPSLS
+					if((markergotten==false)&&(playbuttonclicked==true)){
+						wechose=rpsGame.choiceofplayer;
+						if(wechose>4)return;
+						if(playernumber==1){
+							movesForId.room=roomnumber;
+							movesForId.move1=wechose;
+							resultUpdate.token=movesService.updateMovesMove1(movesForId);
+						}
+						else if(playernumber==2){
+							movesForId.room=roomnumber;
+							movesForId.move2=wechose;
+							resultUpdate.token=movesService.updateMovesMove2(movesForId);
+						}
+						if(wechose==0)yourchoiceimage.source="./resources/images/rocksmall.png";
+						else if(wechose==1)yourchoiceimage.source="./resources/images/papersmall.png";
+						else if(wechose==2)yourchoiceimage.source="./resources/images/scissorssmall.png";
+						else if(wechose==3)yourchoiceimage.source="./resources/images/lizardsmall.png";
+						else if(wechose==4)yourchoiceimage.source="./resources/images/spocksmall.png";
+						else return;
+						simpleInstructionLabel.setStyle("color","#FF9000");
+						simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.GAME_WAIT_FOR_OPPONENTS_ANSWER).toString();
+						timer.start(); //ksekiname na kanoume queries sth vash
+						markergotten=true;
+					}
+				}
+				else
+				{ //vasiko paixnidi*****************************************STARTTT******************************************
+					if(ourturn==true){  //-------------------------------H SEIRA MAS
+						//Alert.show("Perimenw na paikseis");
+						//Alert.show("Phra marker kai einai h seira mou");
+						var temp:int;
+						temp=wechose;
+						wechose=rpsGame.choiceofplayer; //swzoume ton arithmo tou marker
+						if((wechose<nextcorrectanswer)||(temp==wechose))// gia na mh dinoume polles fores thn idia apanthsh
+						{
+							if(temp==wechose){}//feedbacklabel2.text="Αυτό το ξαναδοκίμασες...Κάτι άλλο;";
+							else if(wechose<5)feedbacklabel2.text=currentArray.getItemAt(OurStrings.GAME_DIFFERENT_GAME).toString();//feedbacklabel2.text="Αυτό είναι από άλλο παιχνίδι.";
+							else if(wechose>4)feedbacklabel2.text=currentArray.getItemAt(OurStrings.GAME_PART_TOLD_ALREADY).toString();//feedbacklabel2.text="Αυτό το κομμάτι της ιστορίας έχει ήδη ειπωθεί!"
+							return;
+						} 
+						if(wechose==nextcorrectanswer){ //---------------------APANTHSAME SWSTA
+							ourturn=false; //den einai pleon h seira mas
+							opponentAbandoned.start();
+							simpleInstructionLabel.setStyle("color","#FF4400");
+							simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.GAME_WAIT_FOR_YOUR_OPPONENT).toString();
+							feedbacklabel2.setStyle('color',0x228B22);
+							feedbacklabel2.text=currentArray.getItemAt(OurStrings.GAME_THATS_GREAT)+username+currentArray.getItemAt(OurStrings.GAME_YOU_ANSWERED_CORRECTLY)+secondPlayerName+currentArray.getItemAt(OurStrings.GAME_THIKS_HAPPENED_NEXT);//username+" μπράβο! Απάντησες σωστά... Τώρα...Περίμενε λίγο. \nΓια να δούμε τι πιστεύει ο/η "+secondPlayerName+" ότι έγινε μετά.";
+							rpsGame.stopDetection();
+							/*Ananewnoume th vash*/
+							if(playernumber==1){
+								movesForId.room=roomnumber;
+								movesForId.move1=wechose;
+								movesForId.player1=ourlives.toString();
+								movesService.updateMovesMove1(movesForId);
+								movesService.updateMovesPlayer1(movesForId);
+							}
+							else if(playernumber==2){
+								movesForId.room=roomnumber;
+								movesForId.move2=wechose;
+								movesForId.player2=ourlives.toString();
+								movesService.updateMovesMove2(movesForId);
+								movesService.updateMovesPlayer2(movesForId);
+							}
+							/*Ananewsame th vash*/
+							nextcorrectanswer++;
+							show_next_image();
+							timer.start(); //ksekiname na perimenoume ton antipalo
+						}
+						else{ //-------------------------APANTHSAME LATHOS
+							//ourlives=rpsGame.deleteHeart();
+							if(playernumber==1){
+								movesForId.room=roomnumber;
+								movesForId.move1=wechose;
+								movesForId.player1=ourlives.toString();
+								movesService.updateMovesMove1(movesForId);
+								movesService.updateMovesPlayer1(movesForId);
+							}
+							else if(playernumber==2){
+								movesForId.room=roomnumber;
+								movesForId.move2=wechose;
+								movesForId.player2=ourlives.toString();
+								movesService.updateMovesMove2(movesForId);
+								movesService.updateMovesPlayer2(movesForId);
+							}
+							if(ourlives==0)
+							{
+								Alert.show(currentArray.getItemAt(OurStrings.GAME_OOPS_YOU_LOST).toString());
+								simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.GAME_LOST_CANT_PLAY_ANYMORE).toString();
+								currentState="endstate";
+								rpsGame.stopDetection();
+							}
+							feedbacklabel2.setStyle('color',0x8E2323);
+							//20110525//feedbacklabel2.text=username+currentArray.getItemAt(OurStrings.GAME_DONT_THINK_THATS_WHAT_HAPPENED_LOST_LIFE);//username+"!! Δε νομίζω ότι έγινε αυτό... Έχασες μια ζωή.";
+							/*fading the text*/
+							fadingText.text=currentArray.getItemAt(OurStrings.GAME_MADE_MISTAKE_LOST_LIFE).toString();
+							fadingTimer.reset();
+							feedbackLivesAndTurnsContainer.visible=true;
+							feedbackLivesAndTurnsContainer.alpha=1;
+							fadingTimer.start();
+							/* */	
+							//Alert.show("Exases mia zwh");
+							
+						}
+					}
+					else{
+						//	Alert.show("phra marker kai den einai h seira mou");
+					}
+				}  //********************************************************ENDDD***********************************************
+			}
+			
+			/* *************************Sunarthseis pou xrhsimopoiountai gia na doume an apanthse o antipalos sto ARCROPOLIS************************* */
+			
+			protected function checkforotherplayersdata(event:TimerEvent):void{
+				if(ourturn==false){//kanoume query an den einai h seira mas
+					getAllMovesResult.token = movesService.getMovesByID(roomnumber);
+					getMovesByID(roomnumber);
+				}
+			}
+			
+			protected function handleopponentsrespones(event:ResultEvent):void{ // oso perimenoume na paiksei o antipalos auto edw tha epeksergazetai to ti erxetai
+				if(ourturn==false){//na mhn kanoume tipota an den einai h seira mas
+					if(playernumber==1){
+						if(getAllMovesResult.lastResult.move2==nextcorrectanswer){ // an o antipalos exei apanthsei swsta hrthe h seira mas na paiksoume
+							ourturn=true;
+							/*fading the text*/
+							if(nextcorrectanswer!=17){
+								fadingText.text=currentArray.getItemAt(OurStrings.GAME_OPPONENT_RESPONDED_YOUR_TURN_NOW).toString();
+								fadingTimer.reset();
+								feedbackLivesAndTurnsContainer.visible=true;
+								feedbackLivesAndTurnsContainer.alpha=1;
+								fadingTimer.start();	
+							}
+							/**/
+							opponentAbandoned.reset();
+							simpleInstructionLabel.setStyle("color","#118800");
+							simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.GAME_YOU_CAN_PLAY_NOW_2).toString();
+							feedbacklabel2.text=username+currentArray.getItemAt(OurStrings.GAME_ITS_YOUR_TURN).toString();//username+"... Είναι η σειρά σου. ";
+							rpsGame.startDetection();
+							nextcorrectanswer++; //h epomenh swsth apanthsh
+							show_next_image();
+							timer.stop();
+						}
+					}
+					else if(playernumber==2){
+						if(getAllMovesResult.lastResult.move1==nextcorrectanswer){ // an o antipalos exei apanthsei swsta hrthe h seira mas na paiksoume
+							ourturn=true;
+							/*fading the text*/
+							if(nextcorrectanswer!=17){
+								fadingText.text=currentArray.getItemAt(OurStrings.GAME_OPPONENT_RESPONDED_YOUR_TURN_NOW).toString();
+								fadingTimer.reset();
+								feedbackLivesAndTurnsContainer.visible=true;
+								feedbackLivesAndTurnsContainer.alpha=1;
+								fadingTimer.start();	
+							}
+							/**/
+							opponentAbandoned.reset();
+							simpleInstructionLabel.setStyle("color","#118800");
+							simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.GAME_YOU_CAN_PLAY_NOW_2).toString();
+							feedbacklabel2.text=username+currentArray.getItemAt(OurStrings.GAME_ITS_YOUR_TURN);//username+"... Είναι η σειρά σου. ";
+							rpsGame.startDetection();
+							nextcorrectanswer++; //h epomenh swsth apanthsh
+							show_next_image();
+							timer.stop();
+						}
+					}
+				}
+			}
+			
+			
+			/* *************************Synarthsh pou diaxeirizetai ta pragmata otan patietai to play************************* */
+			
+			protected function Playbutton_clickHandler(event:Event):void 
+			{
+				if(playbuttonclicked==false){
+					playbuttonclicked=true;
+					/* ftiaxnoume to paixnidi (kamera, AR klp) */
+					u=new UIComponent();
+					rpsGame=new FlarClass();
+					rpsGame.currentArray=this.currentArray;
+					u.addChild(rpsGame);
+					rpsGameContainer.addElement(u);
+					//Perimenoume na mas erthei kapoios marker
+					rpsGame.addEventListener(AudioEvent.VOLUME_CHANGE,wegotthemarker); //xrhsimopoieitai gia to oti phrame ton marker
+					/*Emfanizoume tis eikones kai ta labels gia to ti exoun paiksei oi alloi*/
+					currentState="rpslsstate";
+					feedbacklabelborder.visible=false;
+					rpslsDescription.text=currentArray.getItemAt(OurStrings.GAME_RPSLS_YOU_ARE_NOW_PLAYING_RPSLS)+feedbacklabel.text;
+				}
+			}
+			
+			/* *************************Synarthsh pou xrhsimopoieitai gia na emfanizei tis swstes eikones otan apantiountai ta analoga pragmata************************* */
+			
+			protected function show_next_image():void{
+				if(nextcorrectanswer==6)
+				{
+					storyborder.visible=true;
+					image05.visible=true;
+					storycontainer.text+=currentArray.getItemAt(OurStrings.GAME_STORY_1);//storycontainer.text+="\tΝαι ναι... Σα να θυμάμαι σιγά σιγά.\n Στην αρχή η Μήτις έμεινε έγκυος και η γή προέβλεψε κάτι...";
+					if(ourturn==true)feedbacklabel2.text+=currentArray.getItemAt(OurStrings.GAME_OURTURN_QUESTION_1);//feedbacklabel2.text+="\nΤι έγινε μετά από αυτήν την πρόβλεψη;";
+				}
+				else if(nextcorrectanswer==7)
+				{
+					image06.visible=true;
+					storycontainer.text+=currentArray.getItemAt(OurStrings.GAME_STORY_2);//storycontainer.text+="Μετά...Ο Δίας κατάπιε τη Μήτιδα...μάλλον. ";
+					if(ourturn==true)feedbacklabel2.text+=currentArray.getItemAt(OurStrings.GAME_OURTURN_QUESTION_2);//feedbacklabel2.text+="\nΜ...Αφου κατάπιε τη Μήτιδα, ο Δίας έμεινε μόνος του; Όχι όχι. Αλλά;";
+				}
+				else if(nextcorrectanswer==8)
+				{
+					image07.visible=true;
+					storycontainer.text+=currentArray.getItemAt(OurStrings.GAME_STORY_3);//storycontainer.text+="Ναι! Ο Διάς και οι άλλοι θεοί, μαζί με τον ήλιο και τη Σελήνη είχαν συγκεντρωθεί...";
+					if(ourturn==true)feedbacklabel2.text+=currentArray.getItemAt(OurStrings.GAME_OURTURN_QUESTION_3);//feedbacklabel2.text+="\nΑφού συγκεντρώθηκαν οι θεοί, τι έγινε..;";
+				}
+				else if(nextcorrectanswer==9)
+				{
+					image08.visible=true;
+					storycontainer.text+=currentArray.getItemAt(OurStrings.GAME_STORY_4);//storycontainer.text+="Α μα πως το ξέχασα...Ο Ήφαιστος άνοιξε το κεφάλι του Δία και βγήκε από μέσα η Αθηνά! ";
+					if(ourturn==true)feedbacklabel2.text+=currentArray.getItemAt(OurStrings.GAME_OURTURN_QUESTION_4);//feedbacklabel2.text+="\nΔε νομίζω ότι έγινε κάτι άλλο στον Όλυμπο. Τι άλλο γινόταν τότε;";
+				}
+				else if(nextcorrectanswer==10)
+				{
+					image09.visible=true;
+					storycontainer.text+=currentArray.getItemAt(OurStrings.GAME_STORY_5);//storycontainer.text+="\n\tΕκείνη την περίοδο, Οι κάτοικοι της Κεκροπίας έψαχναν θεούς να τους προστατέψουν! ";
+					if(ourturn==true)feedbacklabel2.text+=currentArray.getItemAt(OurStrings.GAME_OURTURN_QUESTION_5);
+				}
+				else if(nextcorrectanswer==11)
+				{
+					image10.visible=true;
+					storycontainer.text+=currentArray.getItemAt(OurStrings.GAME_STORY_6);//storycontainer.text+="Τη θέση του θεού προστάτη διεκδικούσαν η Αθηνά και ο Ποσειδώνας. ";
+					if(ourturn==true)feedbacklabel2.text+=currentArray.getItemAt(OurStrings.GAME_OURTURN_QUESTION_6);//feedbacklabel2.text+="\nΤί έδωσε άραγε ο Ποσειδώνας;";
+				}
+				else if(nextcorrectanswer==12)
+				{
+					image11.visible=true;
+					storycontainer.text+=currentArray.getItemAt(OurStrings.GAME_STORY_7);//storycontainer.text+="Τί τους έδωσε ο ποσειδώνας;...Α ναι! Ένα άλογο και μια πηγή με αλμυρό νερό (σπουδαία δωροδοκία...). ";
+					if(ourturn==true)feedbacklabel2.text+=currentArray.getItemAt(OurStrings.GAME_OURTURN_QUESTION_7);
+				}
+				else if(nextcorrectanswer==13)
+				{
+					image12.visible=true;
+					storycontainer.text+=currentArray.getItemAt(OurStrings.GAME_STORY_8);//storycontainer.text+="Η Αθηνά, από την άλλη, τους έδωσε ένα δένδρο ελιάς. ";
+					if(ourturn==true)feedbacklabel2.text+=currentArray.getItemAt(OurStrings.GAME_OURTURN_QUESTION_8);//feedbacklabel2.text+="\nΚαι οι κάτοικοι τι έκαναν;";
+				}
+				else if(nextcorrectanswer==14)
+				{
+					image13.visible=true;
+					storycontainer.text+=currentArray.getItemAt(OurStrings.GAME_STORY_9);//storycontainer.text+="\n\tΚαι οι κάτοικοι, φυσικά, προτίμησαν την ελιά (κι εσείς το ίδιο δε θα κάνατε;). ";
+					if(ourturn==true)feedbacklabel2.text+=currentArray.getItemAt(OurStrings.GAME_OURTURN_QUESTION_9);//feedbacklabel2.text+="\nΚαι πώς ονομάστηκε η πόλη;";
+				}
+				else if(nextcorrectanswer==15)
+				{
+					image14.visible=true;
+					storycontainer.text+=currentArray.getItemAt(OurStrings.GAME_STORY_10);//storycontainer.text+="Η πόλη λοιπόν, ονομάστηκε Αθήνα. ";
+					if(ourturn==true)feedbacklabel2.text+=currentArray.getItemAt(OurStrings.GAME_OURTURN_QUESTION_10);//feedbacklabel2.text+="\nΚαι έζησαν αυτοί καλά κι εμείς καλύτερα...όχι;";
+				}
+				else if(nextcorrectanswer==16)
+				{
+					image15.visible=true;
+					storycontainer.text+=currentArray.getItemAt(OurStrings.GAME_STORY_11);//storycontainer.text+="Και τότε ο Ποσειδώνας, τσαντισμένος, πλημμύρισε την πεδιάδα της Ελευσίνας! Μάλλον δεν ξέρει να χάνει. ";
+					if(ourturn==true)feedbacklabel2.text+=currentArray.getItemAt(OurStrings.GAME_OURTURN_QUESTION_11);//feedbacklabel2.text+="\nΑυτό πρέπει να ενόχλησε πολύ τους Αθηναίους ε;";
+				}
+				else if(nextcorrectanswer==17)
+				{
+					image16.visible=true;
+					storycontainer.text+=currentArray.getItemAt(OurStrings.GAME_STORY_12);//storycontainer.text+="Αλλά επειδή οι Αθηναίοι ήταν κάπως δειλοί, δεν έκαναν τίποτα. Αυτά...";
+					//Alert.show("Μπράβο! Το παιχνίδι τελείωσε");
+					simpleInstructionLabel.setStyle("color","#33FF00");
+					simpleInstructionLabel.setStyle("textDecoration","none");
+					simpleInstructionLabel.text=currentArray.getItemAt(OurStrings.GAME_CONGRATULATIONS)+username +currentArray.getItemAt(OurStrings.GAME_YOU_AND) +secondPlayerName +currentArray.getItemAt(OurStrings.GAME_HELPED_ME_REMEMBER_WHOLE_STORY);
+					currentState="endstate";
+					
+					rpsGame.stopDetection();
+					timer.stop();
+				}
+				scrollerTimer.start(); //gia na katevasoume to scroller swsta
+			}
+			
+			/* *************************sunarthsh gia na ftiaxnei to scroller************************* */
+			
+			protected function bringTheScrollerDown(event:TimerEvent):void
+			{
+				//storyscroller.verticalScrollBar.value=storyscroller.verticalScrollBar.maximum;
+				//trace("e?");
+				//storyscroller.verticalScrollBar.value=storyscroller.verticalScrollBar.maximum;
+				/* if((storyscroller.verticalScrollBar.maximum!=lastScrollBarMaximum)||(storyscroller.verticalScrollBar.value!=storyscroller.verticalScrollBar.maximum))
+				{ */
+				storyscroller.verticalScrollBar.value=storyscroller.verticalScrollBar.maximum;
+				/* lastScrollBarMaximum=storyscroller.verticalScrollBar.maximum; */
+				scrollerTimer.stop();
+				/* }  */ 
+			}
+			
+			/* *************************Synarthsh gia na kanei fade out to feedback************************* */
+			protected function fadeFeedback(event:TimerEvent):void //na thimithw na to ksanakanw visible prin kalesw to timer
+			{
+				feedbackLivesAndTurnsContainer.alpha-=0.01;
+				
+				if(fadingTimer.currentCount==100)//to timer teleiwse
+				{
+					feedbackLivesAndTurnsContainer.visible=false;
+					fadingTimer.reset();
+				}
+			}
+			
+			/* *************************sunarthsh gia na allazei dunamika to megethos twn grammatwn************************* */
+			
+			protected function fixWidth(rT:RichText,maxSize:Number):void
+			{
+				var fontSize:Number=rT.getStyle("fontSize");
+				rT.visible=false;
+				/*for(var i:int=0;i<10;i++){
+				fontSize-=0.5;
+				rT.setStyle("fontSize",fontSize.toString());
+				trace(i.toString()+" measured fontSize: "+rT.getStyle("fontSize"));
+				trace(i.toString()+" fontSize: "+fontSize.toString());
+				trace(i.toString()+" rT.width: "+rT.width.toString());
+				trace(i.toString()+" rT.measuredwidth: "+rT.measuredWidth.toString());
+				rT.text.length
+				}*/
+				while(rT.text.length*fontSize >maxSize){
+					fontSize-=0.5;
+					rT.setStyle("fontSize",fontSize.toString());
+				}
+				rT.visible=true;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="State1"/>
+		<s:State name="rpslsstate"/>
+		<s:State name="ourturnstate"/>
+		<s:State name="opponentturnstate"/>
+		<s:State name="endstate"/>
+	</s:states>
+	<fx:Declarations>
+		<s:CallResponder id="getAllMovesResult" /> <!-- xrhsimopoietai gia na doume an apanthse o antipalos sto vasiko paixnidi -->
+		<s:CallResponder id="resultUpdate"  /> <!-- xrhsimopoieitai gia na doume an exei perastei o marker sth vash sto rpsls -->
+		<s:CallResponder id="idResult" /> <!-- xrhsimopoieitai gia na doume an o antipalos exei apanthsei sto RPSLS -->
+		<s:CallResponder id="getMovesByIDResult" result="opponent_lives()"/> <!-- Xrhsimopoieitai mono gia na vroume tis zwes tou antipalou -->
+		<movesservice:MovesService id="movesService" fault="Alert.show(event.fault.faultString + '\n' + event.fault.faultDetail)" showBusyCursor="true"/>
+		<valueObjects:Moves id="moves"/>
+		<valueObjects:Moves id="movesForId"/>
+		<scoretableservice:ScoretableService id="scoretableService" fault="Alert.show(event.fault.faultString + '\n' + event.fault.faultDetail)" showBusyCursor="true"/>
+	</fx:Declarations>
+	
+	<!-- general feedback labels -->
+	
+	<s:BorderContainer id="rpsGameContainer" x="0" y="0" width="100%" height="100%" backgroundAlpha="0" borderVisible="false" >
+		<s:Button includeIn="ourturnstate,opponentturnstate" id="arcropolisInstructionsButton" label="{currentArray.getItemAt(OurStrings.GAME_LABEL_INSTRUCTIONS)}" skinClass="skins.WelcomeScreenButtonsSkin" width="90" rollOver="instructionscreeninstance.visible=true;" rollOut="instructionscreeninstance.visible=false;" x="828" y="497"/>
+		<mx:SWFLoader includeIn="State1" x="617" y="371"  source="@Embed('resources/images/rocksmall.png')" />
+		<mx:SWFLoader includeIn="State1" x="843" y="369" source="@Embed('resources/images/lizardsmall.png')" />
+		<mx:SWFLoader includeIn="State1" x="682" y="371"  source="@Embed('resources/images/papersmall.png')" />
+		<mx:SWFLoader includeIn="State1" x="764" y="376"  source="@Embed('resources/images/scissorssmall.png')" />
+		<mx:SWFLoader includeIn="State1" x="952" y="370" source="@Embed('resources/images/spocksmall.png')" />
+		<s:BorderContainer id="feedbacklabelborder" backgroundAlpha="0" x="786" y="10"   height="65" borderColor="#000000" borderWeight="2" x.State1="724" y.State1="160" backgroundAlpha.State1="0.7" backgroundColor.State1="#FFFFFF" cornerRadius.State1="20" borderColor.State1="#7EEB6C">
+			<s:RichText id="feedbacklabel"  
+						color="#203040" fontWeight="bold" 
+						fontSize="19" 
+						text="{currentArray.getItemAt(OurStrings.GAME_CURRENTLY_ALONE_WAITING)}" 
+						horizontalCenter="0" verticalCenter="0"  paddingLeft="6" paddingRight="6" />
+		</s:BorderContainer>
+		
+		
+	</s:BorderContainer>
+	<s:RichText id="simpleInstructionLabel" includeIn="endstate,opponentturnstate,ourturnstate,rpslsstate"  textDecoration="underline" text.rpslsstate="{currentArray.getItemAt(OurStrings.GAME_YOU_CAN_PLAY_NOW)}"  color="#32AA1E" fontWeight="bold" fontFamily="Georgia" fontSize="28" x="681" y="30" x.rpslsstate="689" y.rpslsstate="190">
+		<s:filters>
+			<s:DropShadowFilter color="#441100" strength="1" angle="45" alpha="0.8" blurX="1" blurY="1" distance="1" quality="{BitmapFilterQuality.HIGH}" />
+		</s:filters>	
+	</s:RichText>
+	<s:BorderContainer includeIn="ourturnstate, opponentturnstate" x="681" y="64" width="400" height="130" cornerRadius="20" borderWeight="2" borderColor="#C66BD6" >
+		<s:RichText id="feedbacklabel2" fontSize="18" color="#000080"  text="fblbl2"  horizontalCenter="0" verticalCenter="0" height="100%" width="100%" textAlign.ourturnstate="center" paddingLeft="10" paddingRight="10" paddingTop="10" paddingBottom="10" />
+	</s:BorderContainer>
+	<!-- basic game images -->
+	
+	<mx:Image id="paramithaseikona" includeIn="ourturnstate,opponentturnstate" x="978" y="220"  visible="false" scaleX="0.5" scaleY="0.5" source="@Embed('resources/images/paramithas.png')"/>
+	<mx:Image id="talkingimage" visible="false" includeIn="ourturnstate,opponentturnstate" x="687" y="109"  rotationZ="-10" scaleX="0.9" scaleY="0.4" source="@Embed('resources/images/talking.png')" />
+	
+	<!-- rpsls runtime feedback -->
+	
+	<mx:Image id="yourchoiceimage" x="689" y="300" source="@Embed('resources/images/waitsmall.jpg')" includeIn="rpslsstate"/>
+	<mx:Image id="opponentchoiceimage" x="872" y="300" source="@Embed('resources/images/waitsmall2.jpg')" includeIn="rpslsstate"/>
+	<s:Label x="689" y="278" text="{currentArray.getItemAt(OurStrings.GAME_LABEL_YOUR_MOVE)}"  fontSize="14" id="youhavechosenlabel" fontWeight="bold" includeIn="rpslsstate" />
+	<s:Label x="872" y="278" text="{currentArray.getItemAt(OurStrings.GAME_LABEL_OPPONENTSMOVE)}" fontSize="14" id="opponenthaschosenlabel" fontWeight="bold" includeIn="rpslsstate"/>
+	
+	<!-- Basic Game Story Container -->
+	
+	<s:BorderContainer id="storyborder" borderColor="#000000" borderStyle="solid" borderWeight="1" cornerRadius="15" width="400" backgroundAlpha="0.4" backgroundColor="#FFFFFF" includeIn="opponentturnstate, ourturnstate"   height="291" x="681" y="200">
+		<s:Scroller id="storyscroller"  height="100%" width="80%"  >
+			<s:Group  >
+				<s:RichText id="storycontainer"  paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" left="0" width="100%" fontSize="17" />				
+			</s:Group>
+		</s:Scroller>
+	</s:BorderContainer>
+	
+	
+	<!-- RPSLS instructions and play button only in state1 -->
+	
+	<s:RichEditableText id="rpslsinstructionstext" editable="false" x="62" y="46" fontSize="20" height="370" includeIn="State1" ><s:span text="{currentArray.getItemAt(OurStrings.IN_ORDER)}" /><s:br />
+		<s:br /><s:span fontWeight="bold" fontSize="22" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS)}" /><s:br /> 
+		<s:br /><s:span text="{currentArray.getItemAt(OurStrings.GAME_VARIATION_OF_RPS)}" />
+		<s:br /><s:span text="{currentArray.getItemAt(OurStrings.GAME_PRINTED_CUT_PATTERNS)}" /> 
+		<s:a href="{currentArray.getItemAt(OurStrings.GAME_PATTERN_PDF_LINK)}" target="_blank" >
+			<s:img id="patternsampleimage" textDecoration="none" source="@Embed('resources/images/patt001.png')" alignmentBaseline="ideographicBottom" width="30" height="30" />
+		</s:a>
+		<s:br /><s:span text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_TO_PLAY_CHOOSE_ONE_OF_5)}" /> <s:br /><s:span fontWeight="bold" fontSize="20" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_SHOW_IT_TO_THE_CAMERA)}" /><s:br /><s:br />
+		<s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_DOT_ROCK)}" /><s:span text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_BEATS)}" /><s:span fontStyle="italic" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_SCISS_LIZ)}" /><s:br />
+		<s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_DOT_PAPER)}" /><s:span text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_BEATS)}" /><s:span fontStyle="italic" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_ROCK_SPOCK)}" /><s:br />
+		<s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_DOT_SCISSORS)}" /><s:span text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_BEATS)}" /><s:span fontStyle="italic" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_PAP_LIZ)}" /><s:br />
+		<s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_DOT_LIZARD)}" /><s:span text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_BEATS)}" /><s:span fontStyle="italic" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_PAP_SPOCK)}" /><s:br />
+		<s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_DOT_SPOCK)}" /><s:span text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_BEATS)}" /><s:span fontStyle="italic" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_ROCK_SCISS)}" />
+	</s:RichEditableText>
+	<s:Button  x="64" y="{rpslsinstructionstext.y+rpslsinstructionstext.height+40}" id="playbuttonid" label="Play" width="85" height="44" click="Playbutton_clickHandler(event)" skinClass="skins.PlayButtonSkin" includeIn="State1"/>
+	
+	
+	
+	
+	
+	<!-- Introductory images -->
+	
+	<!-- rpsls runtime descriptive border -->
+	
+	<s:BorderContainer includeIn="rpslsstate" x="689" y="20" width="345" height="150" cornerRadius="20" borderWeight="2" borderColor="#C66BD6">
+		<s:RichText id="rpslsDescription" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" width="100%" height="100%" fontSize="20" />
+	</s:BorderContainer>
+	
+	<!-- mp3Player -->
+	
+	<components:Mp3Player id="mp3Player"  bottom="1" source="./resources/music/Xena.mp3" autoPlay="false" visible="false" volume="1" />
+	
+	<!-- RPSLS instructions container -->
+	
+	<s:BorderContainer id="rpslsInstructionsContainer" includeIn="rpslsstate" x="686" y="63" width="{rpslsinstructionsboxtext.width+30}" height="{rpslsinstructionsboxtext.height+30}"  backgroundColor="#351208" backgroundAlpha="1" borderStyle="inset" borderColor="#843622" borderWeight="10" cornerRadius="15" dropShadowVisible="false" borderVisible="true" visible="false">
+		<!-- <mx:Image x="393" y="4" source="resources/images/xbutton.png" width="32" height="32" id="xbutton" click="rpslsInstructionsContainer.visible=false"/> -->
+		<s:RichText id="rpslsinstructionsboxtext" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" fontSize="20" color="#FAEEFA" includeIn="rpslsstate" horizontalCenter="0" verticalCenter="0"  >
+			
+			<s:span text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_TO_PLAY_CHOOSE_ONE_OF_5)}" /> <s:br /><s:span fontWeight="bold" fontSize="20" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_SHOW_IT_TO_THE_CAMERA)}" /><s:br /><s:br />
+			<s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_DOT_ROCK)}" /><s:span text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_BEATS)}" /><s:span fontStyle="italic" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_SCISS_LIZ)}" /><s:br />
+			<s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_DOT_PAPER)}" /><s:span text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_BEATS)}" /><s:span fontStyle="italic" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_ROCK_SPOCK)}" /><s:br />
+			<s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_DOT_SCISSORS)}" /><s:span text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_BEATS)}" /><s:span fontStyle="italic" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_PAP_LIZ)}" /><s:br />
+			<s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_DOT_LIZARD)}" /><s:span text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_BEATS)}" /><s:span fontStyle="italic" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_PAP_SPOCK)}" /><s:br />
+			<s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_DOT_SPOCK)}" /><s:span text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_BEATS)}" /><s:span fontStyle="italic" text="{currentArray.getItemAt(OurStrings.GAME_RPSLS_ROCK_SCISS)}" /><s:br />
+			<s:span text="{currentArray.getItemAt(OurStrings.GAME_DONT_WORRY)}" /><s:br /><s:span text="{currentArray.getItemAt(OurStrings.GAME_DONT_WORRY2)}" />
+			
+		</s:RichText>
+	</s:BorderContainer>
+	<s:Button includeIn="rpslsstate" id="rpslsInstructionsButton" x="819" y="472" label="{currentArray.getItemAt(OurStrings.GAME_LABEL_INSTRUCTIONS)}" skinClass="skins.WelcomeScreenButtonsSkin" width="90" rollOver="rpslsInstructionsContainer.visible=true;" rollOut="rpslsInstructionsContainer.visible=false;"/>
+	
+	
+	<!-- Arcropolis instructions -->
+	
+	<!-- Opponent lives -->
+	<!--<mx:SWFLoader id="opponentheart1" source="@Embed('resources/images/pinkheart.png')" scaleX="0.1" scaleY="0.1"  visible="false" x="790" y="460"  />
+	<mx:SWFLoader id="opponentheart2" source="@Embed('resources/images/pinkheart.png')" scaleX="0.1" scaleY="0.1"  visible="false" x="820" y="460"  />
+	<mx:SWFLoader id="opponentheart3" source="@Embed('resources/images/pinkheart.png')" scaleX="0.1" scaleY="0.1"  visible="false" x="850" y="460"  />
+	<mx:SWFLoader id="opponentheart4" source="@Embed('resources/images/pinkheart.png')" scaleX="0.1" scaleY="0.1"  visible="false" x="880" y="460" />
+	<mx:SWFLoader id="opponentheart5" source="@Embed('resources/images/pinkheart.png')" scaleX="0.1" scaleY="0.1"  visible="false" x="910" y="460"  />
+	<mx:SWFLoader id="opponentheart6" source="@Embed('resources/images/pinkheart.png')" scaleX="0.1" scaleY="0.1"  visible="false" x="940" y="460"  />
+	<s:Label id="opponenliveslabel" x="684" y="469" text="Opponent's lives" fontWeight="bold" fontSize="13" includeIn="ourturnstate, opponentturnstate"/>-->
+	
+	<!-- Eikones pou emfanizontai me thn istoria prepei na mpoun me auth th seira kai koumpi gia visible-->
+	<!-- Past Cards Button -->
+	<s:Button includeIn="ourturnstate,opponentturnstate,endstate" id="arcropolisPastCardsButton"  depth="1" skinClass="skins.PastCardsSkin" rollOver="storyImagesBorderContainer.visible=true;if(currentState!='endstate')rpsGame.stopDetection();if(currentState!='endstate')rpsGame.visible=false;" rollOut="storyImagesBorderContainer.visible=false;if(currentState!='endstate')rpsGame.startDetection();if(currentState!='endstate')rpsGame.visible=true;"  height="44" width="61" x="1014" y="265" x.ourturnstate="1014" y.ourturnstate="333.5"/>
+	
+	<!-- Fading Container -->
+	<s:BorderContainer id="feedbackLivesAndTurnsContainer" backgroundColor="#351208" backgroundAlpha="1" borderStyle="inset" borderColor="#843622" borderWeight="10" cornerRadius="15" dropShadowVisible="false" borderVisible="true"  visible="false" x="681" y="64" width="400" height="130">
+		<s:RichText id="fadingText" verticalCenter="0" horizontalCenter="0" color="#FFFFFF" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="10" fontSize="16"/> 	
+	</s:BorderContainer>
+	<s:BorderContainer id="playerBorderId" alpha="1" width="{playerText.width+7}" height="{playerText.height+5}" backgroundColor="#000000" backgroundAlpha="1" x="25" y="29" visible="false"> <!-- edw allaksa kati -->
+		<s:RichText id="playerText" text="{username}" fontWeight="bold" color="#FFFFFF" fontSize="15" horizontalCenter="0" verticalCenter="0"/>
+	</s:BorderContainer>
+	
+	<s:BorderContainer id="enemyBorderId" alpha="1" width="{enemyText.width+7}" height="{enemyText.height+5}" backgroundColor="#000000" backgroundAlpha="1" x="{520-enemyText.width}" y="29" visible="false"> <!-- edw allaksa kati -->
+		<s:RichText id="enemyText" text="{secondPlayerName}" fontWeight="bold" color="#FFFFFF" fontSize="15" horizontalCenter="0" verticalCenter="0"/>
+	</s:BorderContainer>
+	
+	<!-- Story Images -->
+	
+	<s:BorderContainer id="storyImagesBorderContainer" backgroundColor="#555555" backgroundAlpha="1" borderStyle="inset" borderColor="#000000" borderWeight="10" cornerRadius="15" dropShadowVisible="false" borderVisible="true"  visible="false" x="10" y="10"  width="860" height="510">
+		<s:Label fontSize="25" horizontalCenter="0" top="10" text="{currentArray.getItemAt(OurStrings.GAME_PAST_CARDS)}" color="#FFFFFF" textDecoration="underline"/>
+		<s:BorderContainer id="image16" borderVisible="false" backgroundAlpha="0" visible="false"  x="640" y="320">
+			<s:Label width="190" textAlign="center" paddingBottom="10"  paddingTop="10" text="{currentArray.getItemAt(OurStrings.GAME_PAST_CARDS_TITLE_1)}" horizontalCenter="0" top="10" fontWeight="bold" color="#FFFFFF"/>
+			<mx:Image y="50" horizontalCenter="0" width="153.6" height="115.6" source="resources/images/image16.jpg"  includeIn="ourturnstate, opponentturnstate, endstate" />
+		</s:BorderContainer>
+		<s:BorderContainer id="image15" borderVisible="false" backgroundAlpha="0" visible="false"  x="440" y="320">
+			<s:Label width="190" textAlign="center" paddingBottom="10"  paddingTop="10" text="{currentArray.getItemAt(OurStrings.GAME_PAST_CARDS_TITLE_2)}" horizontalCenter="0" top="10" fontWeight="bold" color="#FFFFFF"/>
+			<mx:Image y="50" horizontalCenter="0" width="153.6" height="115.6" source="resources/images/image15.jpg"  includeIn="ourturnstate, opponentturnstate, endstate" />
+		</s:BorderContainer>
+		<s:BorderContainer id="image14" borderVisible="false" backgroundAlpha="0" visible="false"  x="240" y="320">
+			<s:Label width="190" textAlign="center" paddingBottom="10"  paddingTop="10" text="{currentArray.getItemAt(OurStrings.GAME_PAST_CARDS_TITLE_3)}" horizontalCenter="0" top="10" fontWeight="bold" color="#FFFFFF"/>
+			<mx:Image y="50" horizontalCenter="0" width="153.6" height="115.6" source="resources/images/image14.jpg"  includeIn="ourturnstate, opponentturnstate, endstate" />
+		</s:BorderContainer>
+		<s:BorderContainer id="image13" borderVisible="false" backgroundAlpha="0" visible="false"  x="40" y="320">
+			<s:Label width="190" textAlign="center" paddingBottom="10"  paddingTop="10" text="{currentArray.getItemAt(OurStrings.GAME_PAST_CARDS_TITLE_4)}" horizontalCenter="0" top="10" fontWeight="bold" color="#FFFFFF"/>
+			<mx:Image y="50" horizontalCenter="0" width="153.6" height="115.6" source="resources/images/image13.jpg"  includeIn="ourturnstate, opponentturnstate, endstate" />
+		</s:BorderContainer>
+		<s:BorderContainer id="image12" borderVisible="false" backgroundAlpha="0" visible="false"  x="640" y="170">
+			<s:Label width="190" textAlign="center" paddingBottom="10"  paddingTop="10" text="{currentArray.getItemAt(OurStrings.GAME_PAST_CARDS_TITLE_5)}" horizontalCenter="0" top="10" fontWeight="bold" color="#FFFFFF"/>
+			<mx:Image y="50" horizontalCenter="0" width="153.6" height="115.6" source="resources/images/image12.jpg"  includeIn="ourturnstate, opponentturnstate, endstate" />
+		</s:BorderContainer>
+		<s:BorderContainer id="image11" borderVisible="false" backgroundAlpha="0" visible="false"  x="440" y="170">
+			<s:Label width="190" textAlign="center" paddingBottom="10"  paddingTop="10" text="{currentArray.getItemAt(OurStrings.GAME_PAST_CARDS_TITLE_6)}" horizontalCenter="0" top="10" fontWeight="bold" color="#FFFFFF"/>
+			<mx:Image y="50" horizontalCenter="0" width="153.6" height="115.6" source="resources/images/image11.jpg"  includeIn="ourturnstate, opponentturnstate, endstate" />
+		</s:BorderContainer>
+		<s:BorderContainer id="image10" borderVisible="false" backgroundAlpha="0" visible="false"  x="240" y="170">
+			<s:Label width="190" textAlign="center" paddingBottom="10"  paddingTop="10" text="{currentArray.getItemAt(OurStrings.GAME_PAST_CARDS_TITLE_7)}" horizontalCenter="0" top="10" fontWeight="bold" color="#FFFFFF"/>
+			<mx:Image y="50" horizontalCenter="0" width="153.6" height="115.6" source="resources/images/image10.jpg"  includeIn="ourturnstate, opponentturnstate, endstate" />
+		</s:BorderContainer>
+		<s:BorderContainer id="image09" borderVisible="false" backgroundAlpha="0" visible="false"  x="40" y="170">
+			<s:Label width="190" textAlign="center" paddingBottom="10"  paddingTop="10" text="{currentArray.getItemAt(OurStrings.GAME_PAST_CARDS_TITLE_8)}" horizontalCenter="0" top="10" fontWeight="bold" color="#FFFFFF"/>
+			<mx:Image y="50" horizontalCenter="0" width="153.6" height="115.6" source="resources/images/image09.jpg"  includeIn="ourturnstate, opponentturnstate, endstate" />
+		</s:BorderContainer>
+		<s:BorderContainer id="image08" borderVisible="false" backgroundAlpha="0" visible="false"  x="640" y="20">
+			<s:Label width="190" textAlign="center" paddingBottom="10"  paddingTop="10" text="{currentArray.getItemAt(OurStrings.GAME_PAST_CARDS_TITLE_9)}" horizontalCenter="0" top="10" fontWeight="bold" color="#FFFFFF"/>
+			<mx:Image y="50" horizontalCenter="0" width="153.6" height="115.6" source="resources/images/image08.jpg"  includeIn="ourturnstate, opponentturnstate, endstate"/>
+		</s:BorderContainer>
+		<s:BorderContainer id="image07" borderVisible="false" backgroundAlpha="0" visible="false"  x="440" y="20">
+			<s:Label width="190" textAlign="center" paddingBottom="10"  paddingTop="10" text="{currentArray.getItemAt(OurStrings.GAME_PAST_CARDS_TITLE_10)}" horizontalCenter="0" top="10" fontWeight="bold" color="#FFFFFF"/>
+			<mx:Image y="50" horizontalCenter="0" width="153.6" height="115.6" source="resources/images/image07.jpg"  includeIn="ourturnstate, opponentturnstate, endstate"/>
+		</s:BorderContainer>
+		<s:BorderContainer id="image06" borderVisible="false" backgroundAlpha="0" visible="false"  x="240" y="20">
+			<s:Label width="190" textAlign="center" paddingBottom="10"  paddingTop="10" text="{currentArray.getItemAt(OurStrings.GAME_PAST_CARDS_TITLE_11)}" horizontalCenter="0" top="10" fontWeight="bold" color="#FFFFFF"/>
+			<mx:Image y="50" horizontalCenter="0" width="153.6" height="115.6" source="resources/images/image06.jpg"  includeIn="ourturnstate, opponentturnstate, endstate" />
+		</s:BorderContainer>
+		<s:BorderContainer id="image05" borderVisible="false" backgroundAlpha="0" visible="false"  x="40" y="20">
+			<s:Label width="190" textAlign="center" paddingBottom="10"  paddingTop="10" text="{currentArray.getItemAt(OurStrings.GAME_PAST_CARDS_TITLE_12)}"  horizontalCenter="0" top="10" fontWeight="bold" color="#FFFFFF" />
+			<mx:Image y="50" horizontalCenter="0" width="153.6" height="115.2" source="resources/images/image05.jpg"  includeIn="ourturnstate, opponentturnstate, endstate"  />
+		</s:BorderContainer>
+	</s:BorderContainer>
+</s:BorderContainer>

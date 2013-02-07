@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   backgroundColor="#6DB6C6" backgroundAlpha=".5"
+				   borderStyle="inset" borderColor="#84CBDA" borderWeight="10"
+				   cornerRadius="15" dropShadowVisible="true" xmlns:logintableservice="services.logintableservice.*"  creationComplete="init()" width="987" height="598">
+	<fx:Script>
+		<![CDATA[
+			import localization.OurStrings;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			
+			import org.osmf.events.AudioEvent;
+			
+			[Bindable]//Xreiazetai se ola ta components gia to localization
+			
+			public var currentArray:ArrayCollection;//Xreiazetai se ola ta components gia to localization
+			public var fileRef:FileReference = new FileReference();//<--edw allaksa kati
+			public var urlreq:URLRequest;//<--edw allaksa kati
+			
+			public function init():void
+			{
+				//fileRef.addEventListener(Event.COMPLETE,completealert);				
+			}
+			public function dispatch_to_start_playing(event:Event):void
+			{
+				this.dispatchEvent(new AudioEvent(AudioEvent.PAN_CHANGE,true,false));
+			}
+			public function dispatch_to_show_instructions(event:Event):void
+			{
+				this.dispatchEvent(new AudioEvent(AudioEvent.MUTED_CHANGE,true,false));
+			}
+			
+			protected function label1_clickHandler(event:MouseEvent):void//<--edw allaksa kati
+			{
+				navigateToURL(urlreq= new URLRequest(currentArray.getItemAt(OurStrings.GAME_PATTERN_PDF_LINK).toString()));
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Label id="welcometext"  text="{currentArray.getItemAt(OurStrings.WELCOME_SCREEN_WELCOME)}"  x="27" y="48" fontSize="30" fontWeight="bold"/>
+	<s:BorderContainer borderColor="#000000" borderWeight="2" backgroundColor="#FFFFFF" backgroundAlpha="0.5" cornerRadius="18" x="27" y="101" width="737">
+		
+		<s:RichText id="maintext1" fontSize="16"  lineHeight="30" width="750" verticalCenter="0" horizontalCenter="0" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" >
+			<s:content>
+				<s:span text="{currentArray.getItemAt(OurStrings.WELCOME_SCREEN_1)}"/><s:br /><s:span text="{currentArray.getItemAt(OurStrings.WELCOME_SCREEN_2)}" /><s:br /><s:span text="{currentArray.getItemAt(OurStrings.WELCOME_SCREEN_3)}" /><s:br/>
+				<s:span fontWeight="bold" text="{currentArray.getItemAt(OurStrings.WELCOME_SCREEN_4)}"/>
+			</s:content>
+			</s:RichText>
+	</s:BorderContainer>
+	<s:Button id="playButton" x="151" y="281" label="{currentArray.getItemAt(OurStrings.WELCOME_SCREEN_PLAYED)}" skinClass="skins.playButtonSkinForWelcomScreen" width="161" height="32" click="dispatch_to_start_playing(event)"/>
+	<s:Button id="notPlayButton" x="386" y="281" label="{currentArray.getItemAt(OurStrings.WELCOME_SCREEN_NOTPLAYED)}" skinClass="skins.WelcomeScreenNeverPlayedBefore" width="161" height="32" click="dispatch_to_show_instructions(event)"/>
+			
+	
+</s:BorderContainer>

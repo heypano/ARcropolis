@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<fxpProperties abbreviated="false" authoringTool="Flex Builder" compiles="true" parentProject="b0b76e45-f1a9-4d45-a328-a98d9699d4bd" projectUUID="b0b76e45-f1a9-4d45-a328-a98d9699d4bd" sdkVersion="4.0.0" uuid="12443e98-ea0f-45a0-bf5d-3a1dfa099126" version="4">
+  <projects/>
+  <src/>
+  <swc>
+    <linked location="sdkPlaceHolder" path="sdkPlaceHolder" position="0" uuid="12443e98-ea0f-45a0-bf5d-3a1dfa099126"/>
+    <linked location="D:/MyWorkspace/Arkropolis/libs" path="/libs" position="1" uuid="82d5aa8c-1e41-4fba-b86d-6005a66b50b6"/>
+    <linked location="${DCD_LIB_LOCATION}" path="${DCD_LIB_LOCATION}" position="2" uuid="82d5aa8c-1e41-4fba-b86d-6005a66b50b6"/>
+    <linked location="${DCD_LOCALE_LOCATION}" path="${DCD_LOCALE_LOCATION}" position="3" uuid="82d5aa8c-1e41-4fba-b86d-6005a66b50b6"/>
+  </swc>
+  <misc/>
+  <theme/>
+</fxpProperties>
